@@ -68,6 +68,7 @@ function renderDashboard(items){
  const ns='http://www.w3.org/2000/svg';
  const node=(tag,attrs={},content)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));if(content!==undefined)el.textContent=String(content);return el};
  const point=(cx,cy,r,angle)=>({x:cx+r*Math.cos(angle),y:cy+r*Math.sin(angle)});
+ const displayValue=n=>Math.abs(n)>=10000?(n/10000).toFixed(1)+'萬':fmt(n);
  for(const [key,label] of METRICS.filter(([key])=>VISIBLE.has(key))){
   const values=domainTotals.map(x=>x.data[key]),total=values.reduce((a,b)=>a+b,0);
   const card=document.createElement('article');card.className='metric-card';
@@ -75,10 +76,10 @@ function renderDashboard(items){
   const svg=node('svg',{viewBox:'0 0 440 290',class:'kpi-donut',role:'img','aria-label':label+'總計'+fmt(total)+'；'+domainTotals.map(x=>x.domain+fmt(x.data[key])).join('、')});
   const cx=220,cy=146,ro=93,ri=52;
   const callouts=[
-   {tx:77,ty:54,ex:113,ey:98,anchor:'end'},
-   {tx:363,ty:54,ex:327,ey:98,anchor:'start'},
-   {tx:363,ty:229,ex:327,ey:192,anchor:'start'},
-   {tx:77,ty:229,ex:113,ey:192,anchor:'end'}
+   {tx:112,ty:84},
+   {tx:328,ty:84},
+   {tx:328,ty:206},
+   {tx:112,ty:206}
   ];
   // Visual order is fixed to match the selected reference: blue top-left, orange top-right,
   // green bottom-right, purple bottom-left; proportions and endpoints remain data-driven.
@@ -107,20 +108,16 @@ function renderDashboard(items){
       const mark=point(cx,cy,(ro+ri)/2,mid);
       sectorGroup.append(node('text',{x:mark.x,y:mark.y+4,'text-anchor':'middle',fill:'#fff','font-size':12,'font-weight':750},Math.round(share*100)+'%'));
     }
-    const startLine=point(cx,cy,ro+1,mid),elbow=point(cx,cy,ro+13,mid);
-    const target=callouts[i],right=i===1||i===2,leadX=right?target.tx-8:target.tx+8;
-    const outerEnd={x:leadX,y:target.ty+7};
-    svg.append(node('polyline',{points:startLine.x+','+startLine.y+' '+elbow.x+','+elbow.y+' '+outerEnd.x+','+outerEnd.y,fill:'none',stroke:x.color,'stroke-width':2.2,'stroke-linecap':'round','stroke-linejoin':'round'}));
-    svg.append(node('circle',{cx:outerEnd.x,cy:outerEnd.y,r:3,fill:x.color}));
+
    }
    current=end;
   }
-  svg.append(node('text',{x:cx,y:cy-1,'text-anchor':'middle',fill:'#183955','font-size':25,'font-weight':750},fmt(total)));
+  svg.append(node('text',{x:cx,y:cy-1,'text-anchor':'middle',fill:'#183955','font-size':25,'font-weight':750},displayValue(total)));
   svg.append(node('text',{x:cx,y:cy+20,'text-anchor':'middle',fill:'#7b8fa1','font-size':12},'總計'));
   domainTotals.forEach((x,i)=>{
     const loc=callouts[i],right=i===1||i===2,align=right?'start':'end';
     svg.append(node('text',{x:loc.tx,y:loc.ty-3,'text-anchor':align,fill:'#324e67','font-size':13},x.domain));
-    svg.append(node('text',{x:loc.tx,y:loc.ty+16,'text-anchor':align,fill:'#183955','font-size':17,'font-weight':750},fmt(values[i])));
+    svg.append(node('text',{x:loc.tx,y:loc.ty+16,'text-anchor':align,fill:'#183955','font-size':17,'font-weight':750},displayValue(values[i])));
   });
   card.append(svg);root.append(card);
  }
