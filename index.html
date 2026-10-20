@@ -82,7 +82,7 @@ function renderDashboard(items){
   ];
   // Visual order is fixed to match the selected reference: blue top-left, orange top-right,
   // green bottom-right, purple bottom-left; proportions and endpoints remain data-driven.
-  const order=[0,1,2,3];
+  const order=[1,2,3,0];
   let current=-Math.PI/2;
   const sectorGroup=node('g');svg.append(sectorGroup);
   if(total===0){
