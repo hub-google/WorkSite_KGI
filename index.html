@@ -39,8 +39,8 @@ function render(){
    for(const domain of DOMAINS)rows.push({name,domain,items:group.filter(e=>e.domain===domain)});
    rows.push({name,domain:'總計',items:group,subtotal:true});
  }
- for(const domain of DOMAINS)rows.push({name:'全部組織總計',domain,items:matching.filter(e=>e.domain===domain),grandGroup:true});
- rows.push({name:'全部組織總計',domain:'總計',items:matching,grandTotal:true});
+ for(const domain of DOMAINS)rows.push({name:'總計',domain,items:matching.filter(e=>e.domain===domain),grandGroup:true});
+ rows.push({name:'總計',domain:'總計',items:matching,grandTotal:true});
  const frag=document.createDocumentFragment();
  for(let i=0;i<rows.length;i++){
    const row=rows[i],r=document.createElement('tr');
@@ -49,7 +49,7 @@ function render(){
    else if(row.grandGroup)r.className='grand-group';
    else if(i%5===0&&i>0)r.className='groupstart';
    if(row.grandGroup&&row.domain===DOMAINS[0]){
-     const n=document.createElement('td');n.className='grand-org';n.rowSpan=5;n.textContent='全部組織總計';r.append(n);
+     const n=document.createElement('td');n.className='grand-org';n.rowSpan=5;n.textContent='總計';r.append(n);
    }else if(!row.grandGroup&&!row.grandTotal&&i%5===0){
      const n=document.createElement('td');n.className='org-cell';n.rowSpan=5;
      if(level<3){
