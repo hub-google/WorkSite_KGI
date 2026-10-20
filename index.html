@@ -176,7 +176,7 @@ function initReportForm(){
   e.preventDefault();if(!form.reportValidity())return;
   const d=new FormData(form),text=k=>String(d.get(k)||'').trim();
   const address=[text('city'),text('district'),text('village'),text('road'),text('section'),text('lane')?text('lane')+'巷':'',text('alley')?text('alley')+'弄':'',text('number')+'號',text('floor')?text('floor')+'樓':'',text('suite')].join('');
-  result.textContent='已送出（DEMO，未儲存）\\n回報類型：'+text('reportType')+'職域\\n職域名稱：'+text('siteName')+'\\n地址：'+address+'\\n電話：'+text('sitePhone')+'\\n員工人數：'+text('employees')+'\\n業務員代碼：'+text('agentCode');
+  result.textContent='已送出（DEMO，未儲存）\n回報類型：'+text('reportType')+'職域\n職域名稱：'+text('siteName')+'\n地址：'+address+'\n電話：'+text('sitePhone')+'\n員工人數：'+text('employees')+'\n業務員代碼：'+text('agentCode');
   result.hidden=false;result.scrollIntoView({behavior:'smooth',block:'nearest'});
  };
  syncDistrict()
