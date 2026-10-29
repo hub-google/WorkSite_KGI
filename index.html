@@ -426,7 +426,11 @@ function render(){
  LEVELS.slice(0,level+1).forEach((name,i)=>{if(i){const sep=document.createElement('span');sep.textContent='›';crumb.append(sep)}const b=document.createElement('button');b.textContent=i===0?'通路總計':path[i-1];b.disabled=i===level;b.onclick=()=>{path=path.slice(0,i);render()};crumb.append(b)});
  const cols=METRICS.filter(m=>VISIBLE.has(m[0]));const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');
  const first=document.createElement('th');first.textContent=['區域中心','業務區','通訊處','業務員'][level]||'業務員';
- first.title='預設依名稱排序';tr.append(first);
+ const nameSort=document.createElement('button');nameSort.type='button';nameSort.className='metric-sort';
+ nameSort.textContent=first.textContent+' '+(!sortMetric?'▲':'⇅');
+ nameSort.title='恢復依名稱排序';
+ nameSort.onclick=()=>{sortMetric=null;sortDirection='name';render()};
+ first.replaceChildren(nameSort);tr.append(first);
  const dom=document.createElement('th');dom.textContent='職域';dom.style.textAlign='left';tr.append(dom);
  for(const [key,label] of cols){
   const h=document.createElement('th'),btn=document.createElement('button'),symbol=document.createElement('span');
@@ -438,7 +442,7 @@ function render(){
   if(label==='達標職域數')h.append(targetHelp());else h.append(btn);
   // Also allow sorting on the existing special target-help column.
   if(label==='達標職域數'){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依達標職域數排序';h.append(sort)}
-  th.querySelectorAll('th');tr.append(h);
+  tr.append(h);
  }
  th.append(tr);
  const tbody=byId('tbody');tbody.replaceChildren();
@@ -476,7 +480,8 @@ function render(){
     if(DETAIL_METRICS.has(key)){
      const button=document.createElement('button');button.type='button';button.className='detail-link';
      button.textContent=fmt(values[key]);button.title='查看'+label+'的商品分類統計';
-     const scope=(row.name==='總計'?'通路／目前組織總計':row.name)+(row.domain==='總計'?'':'／'+row.domain);
+     const location=path.length?path.join('／'):'通路總計';
+     const scope=(row.name==='總計'?location:location+'／'+row.name)+(row.domain==='總計'?'':'／'+row.domain);
      button.onclick=()=>openMetricDetail(key,label,row.items,scope);
      cell.append(button);
     }else cell.textContent=fmt(values[key]);
