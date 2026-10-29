@@ -503,25 +503,44 @@ function renderDashboard(items,showYoY){
   rate.append(node('tspan',{'font-size':25,'font-weight':700},'%'));
   svg.append(rate);
   svg.append(node('text',{x:cx,y:cy+45,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#647b90'},'職域合計 '+compact(workplaces)));
-  // Place text directly beside the ring's left and right edges, with no leader lines.
-  const gap=57,minY=47,maxY=326;
-  for(const side of ['left','right']){
-   const placed=callouts.filter(x=>x.side===side).sort((a,b)=>a.tip.y-b.tip.y);
-   for(let i=0;i<placed.length;i++){
-    placed[i].labelY=Math.max(minY+i*gap,Math.min(maxY-(placed.length-1-i)*gap,placed[i].tip.y));
-   }
-   for(let i=1;i<placed.length;i++)placed[i].labelY=Math.max(placed[i].labelY,placed[i-1].labelY+gap);
-   if(placed.length&&placed[placed.length-1].labelY>maxY){
-    placed[placed.length-1].labelY=maxY;
-    for(let i=placed.length-2;i>=0;i--)placed[i].labelY=Math.min(placed[i].labelY,placed[i+1].labelY-gap);
-   }
-  }
+  // Keep each label beside its own slice, based on its actual midpoint angle.
+  // Do not collapse the labels into a side legend or draw leader lines.
+  const occupied=[];
   for(const part of callouts){
-   const left=part.side==='left',labelX=left?cx-outer-12:cx+outer+12;
-   const label=node('text',{x:labelX,y:part.labelY-22,'text-anchor':left?'end':'start','font-size':13,'font-weight':800,fill:'#30475f'});
-   label.append(node('tspan',{x:labelX},part.label));
-   label.append(node('tspan',{x:labelX,dy:17,'font-size':12,'font-weight':650,fill:'#55718a'},
-    compact(part.value)+' · '+fmtFixed(part.share*100,1)+'%'));
+   const ux=Math.cos(part.mid),uy=Math.sin(part.mid);
+   const anchor=ux < -0.3?'end':ux>0.3?'start':'middle';
+   const amountText=compact(part.value)+' · '+fmtFixed(part.share*100,1)+'%';
+   const width=Math.max(part.label.length*13*0.82,amountText.length*12*0.63);
+   const bounds=(x,y)=>{
+    const l=anchor==='end'?x-width:anchor==='start'?x:x-width/2;
+    return {left:l,right:l+width,top:y-16,bottom:y+16};
+   };
+   let pos=null;
+   // Move outward radially only when necessary to prevent overlapping adjacent labels.
+   for(let extra=0;extra<=72;extra+=9){
+    const radius=outer+23+extra;
+    const x=cx+ux*radius+(anchor==='start'?7:anchor==='end'?-7:0);
+    const y=cy+uy*radius;
+    const b=bounds(x,y);
+    if(b.left<8||b.right>542||b.top<12||b.bottom>356)continue;
+    if(!occupied.some(p=>b.left<p.right+5&&b.right>p.left-5&&b.top<p.bottom+5&&b.bottom>p.top-5)){
+     pos={x,y,b};break;
+    }
+   }
+   if(!pos){
+    // Edge fallback: use the closest legal label position to the sector midpoint.
+    const radius=outer+23;
+    const desiredX=cx+ux*radius+(anchor==='start'?7:anchor==='end'?-7:0);
+    const x=Math.max(8+width*(anchor==='end'?1:anchor==='middle'?0.5:0),
+     Math.min(542-width*(anchor==='start'?1:anchor==='middle'?0.5:0),desiredX));
+    const y=Math.max(30,Math.min(340,cy+uy*radius));
+    pos={x,y,b:bounds(x,y)};
+   }
+   occupied.push(pos.b);
+   const label=node('text',{x:pos.x,y:pos.y-7,'text-anchor':anchor,
+    'font-size':13,'font-weight':800,fill:'#30475f'});
+   label.append(node('tspan',{x:pos.x},part.label));
+   label.append(node('tspan',{x:pos.x,dy:17,'font-size':12,'font-weight':650,fill:'#55718a'},amountText));
    svg.append(label);
   }
   if(!totalValue)svg.append(node('text',{x:cx,y:340,'text-anchor':'middle','font-size':13,fill:'#8392a2'},'此範圍尚無業績'));
