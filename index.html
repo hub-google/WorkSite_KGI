@@ -187,10 +187,10 @@ function renderMetricDetail(){
   name.className='detail-name';name.textContent=item.name;
   amount.className='amount';amount.textContent=fmt(item.value);
   const percentage=total?item.value/total*100:0;
-  percent.className='percent';percent.textContent=percentage.toFixed(1)+'%';
+  percent.className='percent';percent.textContent=fmtFixed(percentage,1)+'%';
   const track=document.createElement('div');track.className='detail-share-track';
   const fill=document.createElement('div');fill.className='detail-share-fill';fill.style.width=percentage+'%';
-  fill.title=item.name+' '+fmt(item.value)+'，占'+percentage.toFixed(1)+'%';
+  fill.title=item.name+' '+fmt(item.value)+'，占'+fmtFixed(percentage,1)+'%';
   track.append(fill);barCell.append(track);
   row.append(name,amount,percent,barCell);body.append(row);
  }
@@ -257,7 +257,8 @@ function sum(items,yearOffset=0){
  result.activeAgents=producingAgents.size;
  return result
 }
-function fmt(n){return n.toLocaleString('zh-TW')}
+function fmt(n){return Number(n).toLocaleString('zh-TW')}
+function fmtFixed(n,digits=1){return Number(n).toLocaleString('zh-TW',{minimumFractionDigits:digits,maximumFractionDigits:digits})}
 
 const organizationFilters=new Map();
 let sortMetric=null,sortDirection='name';
@@ -341,9 +342,9 @@ function renderDashboard(items,showYoY){
   return el;
  };
  const xy=(cx,cy,r,a)=>({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});
- const compact=n=>Math.abs(n)>=10000?(n/10000).toFixed(1)+'萬':fmt(n);
+ const compact=n=>Math.abs(n)>=10000?fmtFixed(n/10000,1)+'萬':fmt(n);
  const growth=(current,previous)=>previous?100*(current-previous)/previous:null;
- const growthText=value=>value===null?'新增':(value>0?'+':'')+value.toFixed(1)+'%';
+ const growthText=value=>value===null?'新增':(value>0?'+':'')+fmtFixed(value,1)+'%';
  const growthClass=value=>value===null?'new':value>=0?'up':'down';
  const datasets=[
   {name:'FYC',whole:'totalFyc',part:'fyc'},
@@ -372,14 +373,14 @@ function renderDashboard(items,showYoY){
      ?'M '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 1 1 '+cx+' '+(cy+r)+' A '+r+' '+r+' 0 1 1 '+cx+' '+(cy-r)+' Z'
      :'M '+cx+' '+cy+' L '+p1.x+' '+p1.y+' A '+r+' '+r+' 0 '+(sweep>Math.PI?1:0)+' 1 '+p2.x+' '+p2.y+' Z';
     const sector=node('path',{d,fill:part.color,stroke:'#fff','stroke-width':1.4});
-    sector.append(node('title',{},part.label+'：'+fmt(part.value)+'（'+(share*100).toFixed(1)+'%）'));
+    sector.append(node('title',{},part.label+'：'+fmt(part.value)+'（'+fmtFixed(share*100,1)+'%）'));
     svg.append(sector);
     // Both the category and percentage are kept inside the pie, not in outer callouts.
     const rad=share<0.12?117:share<0.2?102:79,where=xy(cx,cy,rad,mid);
     const font=share<0.09?9.5:share<0.14?10.5:12;
     const label=node('text',{x:where.x,y:where.y-6,fill:'#fff','text-anchor':'middle','font-size':font,'font-weight':750,'paint-order':'stroke','stroke':'#263547','stroke-opacity':0.26,'stroke-width':1.1,'stroke-linejoin':'round'});
     label.append(node('tspan',{x:where.x,dy:0},part.label));
-    label.append(node('tspan',{x:where.x,dy:15},(share*100).toFixed(1)+'%'));
+    label.append(node('tspan',{x:where.x,dy:15},fmtFixed(share*100,1)+'%'));
     label.append(node('tspan',{x:where.x,dy:15},compact(part.value)));
     svg.append(label);
    }
