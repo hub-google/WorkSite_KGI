@@ -39,6 +39,50 @@
 .yoy-value{text-align:right;white-space:nowrap;color:#39536b;font-variant-numeric:tabular-nums;font-size:11px}
 @media(max-width:1100px){#dashboardGrid,.yoy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:730px){#dashboardGrid,.yoy-grid{grid-template-columns:1fr}.yoy-wrap{padding:16px 12px}.pie-card{padding:14px}.pie-heading>strong{font-size:13px}}
+
+/* KPI drill-down, organization filter and sortable table */
+#yoyWrap[hidden],#summaryDashboard[hidden],#orgFilterMenu[hidden]{display:none!important}
+.detail-link{border:0;background:none;color:#116da7;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:650;padding:3px 0;white-space:nowrap}
+.detail-link:hover,.detail-link:focus-visible{color:#064a7c;text-decoration-thickness:2px}
+.metric-sort{border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;font-weight:700;padding:4px 2px;white-space:nowrap}
+.metric-sort:hover,.metric-sort:focus-visible{color:#08659e;text-decoration:underline}
+.metric-sort[aria-sort="descending"],.metric-sort[aria-sort="ascending"]{color:#076ba7}
+.sort-symbol{display:inline-block;font-size:11px;margin-left:4px;color:#8095a8}
+.metric-sort[aria-sort="descending"] .sort-symbol,.metric-sort[aria-sort="ascending"] .sort-symbol{color:#0675b0;font-weight:900}
+.org-filter{position:relative;display:inline-block;z-index:18}
+.org-filter-panel{position:absolute;top:calc(100% + 7px);right:0;width:min(350px,85vw);max-height:min(65vh,530px);overflow:auto;background:#fff;border:1px solid #cad9e5;border-radius:12px;box-shadow:0 14px 40px #16314922;padding:13px;z-index:40}
+.org-filter-panel h3{margin:0 0 6px;font-size:15px;color:#284761}
+.org-filter-panel p{margin:0 0 12px;font-size:12px;color:#72889c}
+.org-filter-tools{display:flex;justify-content:space-between;gap:8px;margin:0 0 10px}
+.org-filter-tools button{border:1px solid #ccdbe6;background:#f6fbfd;color:#225b82;padding:5px 10px;border-radius:7px;font-size:12px}
+.org-filter-list{max-height:320px;overflow:auto}
+.org-filter-list label{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:5px;cursor:pointer;font-size:13px}
+.org-filter-list label:hover{background:#f0f6fa}
+.org-filter-list input{accent-color:#1671a5;width:16px;height:16px}
+.org-filter-empty{font-size:12px;color:#687c8e;padding:14px}
+.head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kpi-dialog{border:0;border-radius:18px;padding:0;width:min(810px,calc(100vw - 28px));max-height:min(86vh,900px);box-shadow:0 25px 85px #0a284566;color:#203c56}
+.kpi-dialog::backdrop{background:rgba(14,32,53,.6)}
+.detail-body{padding:24px 25px 22px;max-height:min(86vh,900px);overflow:auto}
+.detail-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.detail-top h2{margin:0 0 6px;font-size:22px;color:#1b425f}
+.detail-subtitle{margin:0 0 13px;font-size:13px;color:#708499;line-height:1.7}
+.detail-close{width:36px;height:36px;min-width:36px;display:grid;place-items:center;font-size:22px;font-weight:650;border:1px solid #d6e0e9;border-radius:9px;background:#fff;color:#31516c}
+.detail-close:hover{background:#eaf2f7}
+.detail-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:12px 0;background:#f3f7fb;padding:12px 14px;border-radius:10px}
+.detail-controls label{font-size:13px;font-weight:700;color:#3f5f78}
+.detail-controls select{font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid #bfcfdb;background:white;min-width:145px}
+.detail-total{margin-left:auto;color:#24516d;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.detail-table{width:100%;min-width:0;border-collapse:collapse;font-size:13px}
+.detail-table th{text-align:left;background:#edf4f8;color:#3d5b72;padding:11px 9px}
+.detail-table td{padding:10px 9px;border-bottom:1px solid #edf1f4;vertical-align:middle}
+.detail-table td.amount,.detail-table td.percent{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.detail-table td.amount{font-weight:750;color:#183e5b}
+.detail-share-track{height:13px;border-radius:6px;background:#e9eff3;overflow:hidden;min-width:75px}
+.detail-share-fill{height:100%;border-radius:6px;background:#1880b3}
+.detail-table .detail-name{min-width:130px;word-break:break-word}
+.detail-foot{color:#75899b;font-size:12px;margin-top:15px;line-height:1.7}
+@media(max-width:650px){.detail-body{padding:18px 12px}.detail-table{font-size:11px}.detail-table th,.detail-table td{padding:8px 4px}.detail-share-track{min-width:48px}.detail-controls{gap:7px}.detail-total{width:100%;margin-left:0}}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -52,7 +96,7 @@
 })();
 </script></head><body>
 <div class="closecover" id="cover"></div><aside class="sidebar" id="sidebar"><div class="brand"><span>W</span>職域經營平台</div><div class="navhint">功能選單</div><button class="nav" data-view="最新消息">◉　最新消息</button><button class="nav" data-view="經營資源">▤　經營資源</button><button class="nav" data-view="達人經驗談">✦　達人經驗談</button><button class="nav active" data-view="績效管理">▥　績效管理</button><button class="nav" data-view="職域新增、調整、刪除回報">✎　職域新增、調整、刪除回報</button><div class="navhint"></div></aside>
-<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 示範資料 · 非實際績效</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">三項整體業績拆分為其他業績及四個職域；下方比較今年與去年同期</p></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">示範數字為固定模擬資料；一般績效由下層彙總。「實動率」依期間內 FYN &gt; 0 的業務員去重計算，顯示人數（非百分比），不能直接加總不同職域。手機可左右滑動查看欄位。</div></section></section><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
+<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 示範資料 · 非實際績效</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">三項整體業績拆分為其他業績及四個職域；下方比較今年與去年同期</p></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><div class="org-filter"><button type="button" class="outline" id="orgFilterBtn" aria-expanded="false">篩選（全部） ▾</button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">示範數字為固定模擬資料；一般績效由下層彙總。「實動率」依期間內 FYN &gt; 0 的業務員去重計算，顯示人數（非百分比），不能直接加總不同職域。手機可左右滑動查看欄位。</div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料為固定模擬值；各分類加總與所點選的統計表數字一致。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▤</div><span class="resource-tag">活動補助 · DEMO</span><h2>客說會補助申請</h2><p>辦理職域客戶說明會時，快速了解活動補助申請方式、準備資料與核銷流程。</p><details><summary>查看示範流程 ▾</summary><ol><li>填寫活動名稱、日期、地點與預估人數。</li><li>準備活動規劃與預算資料。</li><li>提交主管審核後，依規定辦理核銷。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▣</div><span class="resource-tag">行政服務 · DEMO</span><h2>識別證補發</h2><p>協助駐廠或職域服務人員查詢識別證遺失、損壞及補發所需的申請步驟。</p><details><summary>查看示範流程 ▾</summary><ol><li>選擇遺失、毀損或資料異動原因。</li><li>準備申請人與服務據點基本資料。</li><li>送出補發申請並等待窗口通知領取。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▢</div><span class="resource-tag">客戶經營 · DEMO</span><h2>LINE客戶預約活動</h2><p>示範如何透過 LINE 邀請職域客戶預約諮詢、講座或定期服務活動。</p><details><summary>查看示範流程 ▾</summary><ol><li>設定活動主題、時段及可預約名額。</li><li>透過 LINE 分享預約資訊給客戶。</li><li>確認預約名單並安排活動提醒。</li></ol></details></article>
@@ -70,6 +114,83 @@ const ORGANIZATIONS=[["北二區域","台北業務三區","昕立通訊處"],["�
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠'];
 const METRICS=[['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['activeAgents','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['totalFyn','FYN'],['fyn','職域FYN'],['totalPremium','保費'],['premium','職域保費'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
 const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
+
+const PRODUCT_CATALOG=[
+ {name:'安心守護壽險（示範）',kind:'壽險',payment:'年繳',term:'20年'},
+ {name:'家庭保障定期壽險（示範）',kind:'壽險',payment:'月繳',term:'10年'},
+ {name:'重大疾病保障（示範）',kind:'健康險',payment:'年繳',term:'20年'},
+ {name:'醫療照護終身險（示範）',kind:'健康險',payment:'季繳',term:'15年'},
+ {name:'手術住院保障（示範）',kind:'健康險',payment:'月繳',term:'10年'},
+ {name:'意外安全保障（示範）',kind:'意外險',payment:'年繳',term:'1年'},
+ {name:'旅行平安保障（示範）',kind:'意外險',payment:'躉繳',term:'1年'},
+ {name:'退休年金規劃（示範）',kind:'年金險',payment:'年繳',term:'10年'},
+ {name:'退休即期年金（示範）',kind:'年金險',payment:'躉繳',term:'躉繳'},
+ {name:'穩健變額保障（示範）',kind:'投資型保險',payment:'半年繳',term:'15年'},
+ {name:'增額資產規劃（示範）',kind:'壽險',payment:'半年繳',term:'6年'},
+ {name:'長期照顧保障（示範）',kind:'健康險',payment:'季繳',term:'20年'}
+];
+const DETAIL_DIMENSIONS=[['kind','商品別'],['payment','繳別'],['term','年期'],['name','商品名稱']];
+const DETAIL_METRICS=new Set(['totalFyc','fyc','totalFyn','fyn','totalPremium','premium']);
+// Largest-remainder integer allocation: per-product simulated amounts reconcile exactly.
+function allocateProducts(amount,seed,scope){
+ const weights=PRODUCT_CATALOG.map((p,i)=>count(seed+'|'+scope+'|product|'+i,2,18));
+ const denominator=weights.reduce((a,b)=>a+b,0);
+ const portions=weights.map((w,i)=>({index:i,exact:amount*w/denominator}));
+ const out=portions.map(p=>Math.floor(p.exact));
+ let remainder=amount-out.reduce((a,b)=>a+b,0);
+ portions.sort((a,b)=>(b.exact-Math.floor(b.exact))-(a.exact-Math.floor(a.exact))||a.index-b.index);
+ for(let i=0;i<remainder;i++)out[portions[i].index]++;
+ return out
+}
+function productBreakdown(items,key,dimension){
+ if(!DETAIL_METRICS.has(key))return [];
+ const baseKey=OVERALL_TO_WORKSITE[key]||key;
+ const isOverall=!!OVERALL_TO_WORKSITE[key];
+ const grouped=new Map();
+ for(const item of items){
+  const m=adjust(metrics(item.seed),item.seed);
+  const workplace=allocateProducts(m[baseKey],item.seed,baseKey);
+  const other=isOverall?allocateProducts(m[key]-m[baseKey],item.seed,'other-'+baseKey):null;
+  for(let i=0;i<PRODUCT_CATALOG.length;i++){
+   const value=workplace[i]+(other?other[i]:0);
+   const label=PRODUCT_CATALOG[i][dimension];
+   grouped.set(label,(grouped.get(label)||0)+value);
+  }
+ }
+ return [...grouped].filter(([,value])=>value>0).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name,'zh-TW'));
+}
+let detailContext=null;
+function openMetricDetail(key,label,items,scope){
+ detailContext={key,label,items,scope};
+ byId('detailDimension').value='kind';
+ byId('metricDetailDialog').showModal();
+ renderMetricDetail();
+}
+function renderMetricDetail(){
+ if(!detailContext)return;
+ const {key,label,items,scope}=detailContext,dimension=byId('detailDimension').value;
+ const total=sum(items)[key],rows=productBreakdown(items,key,dimension);
+ byId('detailTitle').textContent=label+'｜分類統計';
+ byId('detailScope').textContent=scope+'　｜　'+start+' ～ '+end;
+ byId('detailTotal').textContent='合計 '+fmt(total);
+ const body=byId('detailRows');body.replaceChildren();
+ for(const item of rows){
+  const row=document.createElement('tr'),name=document.createElement('td'),amount=document.createElement('td');
+  const percent=document.createElement('td'),barCell=document.createElement('td');
+  name.className='detail-name';name.textContent=item.name;
+  amount.className='amount';amount.textContent=fmt(item.value);
+  const percentage=total?item.value/total*100:0;
+  percent.className='percent';percent.textContent=percentage.toFixed(1)+'%';
+  const track=document.createElement('div');track.className='detail-share-track';
+  const fill=document.createElement('div');fill.className='detail-share-fill';fill.style.width=percentage+'%';
+  fill.title=item.name+' '+fmt(item.value)+'，占'+percentage.toFixed(1)+'%';
+  track.append(fill);barCell.append(track);
+  row.append(name,amount,percent,barCell);body.append(row);
+ }
+ byId('detailCategory').textContent=DETAIL_DIMENSIONS.find(([key])=>key===dimension)[1];
+ byId('detailEmpty').hidden=rows.length>0;
+}
+
 // Default table columns: preserve prior metric order, only hide overall FYC/FYN/premium.
 const VISIBLE=new Set(['worksites','active','operators','activeAgents','fyc','fyn','premium']);
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
@@ -130,6 +251,54 @@ function sum(items,yearOffset=0){
  return result
 }
 function fmt(n){return n.toLocaleString('zh-TW')}
+
+const organizationFilters=new Map();
+let sortMetric=null,sortDirection='name';
+function filterScopeKey(){return path.join('|')}
+function availableOrganizations(items){return [...new Set(items.map(item=>item.path[path.length]))].sort((a,b)=>a.localeCompare(b,'zh-TW'))}
+function filteredItems(){
+ const source=entries.filter(prefixMatches),options=availableOrganizations(source);
+ const selected=organizationFilters.get(filterScopeKey());
+ return {source,options,items:selected?source.filter(x=>selected.has(x.path[path.length])):source};
+}
+function setFilterSelection(names){
+ organizationFilters.set(filterScopeKey(),new Set(names));
+ render();
+}
+function renderOrganizationFilter(options){
+ const menu=byId('orgFilterMenu'),list=byId('orgFilterList'),filter=organizationFilters.get(filterScopeKey());
+ const selected=filter||new Set(options);
+ const countSelected=options.filter(x=>selected.has(x)).length;
+ byId('orgFilterBtn').textContent='篩選'+(countSelected===options.length?'（全部）':'（'+countSelected+'/'+options.length+'）')+' ▾';
+ byId('orgFilterBtn').setAttribute('aria-expanded',String(!menu.hidden));
+ byId('orgFilterTitle').textContent='選擇'+(['區域中心','業務區','通訊處','業務員'][path.length]||'組織');
+ list.replaceChildren();
+ for(const name of options){
+  const wrap=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=selected.has(name);
+  check.onchange=()=>{
+   const next=new Set(organizationFilters.get(filterScopeKey())||options);
+   if(check.checked)next.add(name);else next.delete(name);
+   setFilterSelection(next);
+  };
+  wrap.append(check,document.createTextNode(name));list.append(wrap);
+ }
+ byId('orgFilterAll').onclick=()=>setFilterSelection(options);
+ byId('orgFilterNone').onclick=()=>setFilterSelection([]);
+}
+function toggleSort(key){
+ if(sortMetric===key)sortDirection=sortDirection==='desc'?'asc':'desc';
+ else{sortMetric=key;sortDirection='desc'}
+ render();
+}
+function sortedOrganizations(names,matching){
+ if(!sortMetric)return [...names].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+ const totals=new Map(names.map(name=>[name,sum(matching.filter(item=>item.path[path.length]===name))[sortMetric]]));
+ return [...names].sort((a,b)=>{
+  const difference=(totals.get(a)-totals.get(b))*(sortDirection==='desc'?-1:1);
+  return difference||a.localeCompare(b,'zh-TW');
+ });
+}
+
 function childName(e){return e.path[path.length]}
 function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
@@ -200,7 +369,7 @@ function renderDashboard(items,showYoY){
     const label=node('text',{x:where.x,y:where.y-6,fill:'#fff','text-anchor':'middle','font-size':font,'font-weight':750,'paint-order':'stroke','stroke':'#263547','stroke-opacity':0.26,'stroke-width':1.1,'stroke-linejoin':'round'});
     label.append(node('tspan',{x:where.x,dy:0},part.label));
     label.append(node('tspan',{x:where.x,dy:15},(share*100).toFixed(1)+'%'));
-    if(share>=0.2)label.append(node('tspan',{x:where.x,dy:15},compact(part.value)));
+    label.append(node('tspan',{x:where.x,dy:15},compact(part.value)));
     svg.append(label);
    }
    angle=endAngle;
@@ -243,7 +412,8 @@ function renderDashboard(items,showYoY){
  if(showYoY)byId('yoyPeriod').textContent=start+' ～ '+end+'　對比　'+shiftYear(start,-1)+' ～ '+shiftYear(end,-1)+'（去年同期）';
 }
 function render(){
- const level=path.length, matching=entries.filter(prefixMatches);
+ const level=path.length,{options,items:matching}=filteredItems();
+ renderOrganizationFilter(options);
  byId('summaryDashboard').hidden=false;
  byId('yoyWrap').hidden=level!==0;
  byId('dashboardTitle').textContent=LEVELS[level]+'業績組成';
@@ -254,9 +424,25 @@ function render(){
  byId('period').textContent=start+' ～ '+end;byId('leveltitle').textContent=LEVELS[level];
  const crumb=byId('crumb');crumb.replaceChildren();
  LEVELS.slice(0,level+1).forEach((name,i)=>{if(i){const sep=document.createElement('span');sep.textContent='›';crumb.append(sep)}const b=document.createElement('button');b.textContent=i===0?'通路總計':path[i-1];b.disabled=i===level;b.onclick=()=>{path=path.slice(0,i);render()};crumb.append(b)});
- const cols=METRICS.filter(m=>VISIBLE.has(m[0]));const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');const first=document.createElement('th');first.textContent=['區域中心','業務區','通訊處','業務員'][level]||'業務員';tr.append(first);const dom=document.createElement('th');dom.textContent='職域';dom.style.textAlign='left';tr.append(dom);for(const [,label] of cols){const h=document.createElement('th');if(label==='達標職域數')h.append(targetHelp());else h.textContent=label;if(label==='實動率')h.title='期間內 FYN 大於 0 的不重複業務員人數（單位：人，非百分比）';tr.append(h)}th.append(tr);
+ const cols=METRICS.filter(m=>VISIBLE.has(m[0]));const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');
+ const first=document.createElement('th');first.textContent=['區域中心','業務區','通訊處','業務員'][level]||'業務員';
+ first.title='預設依名稱排序';tr.append(first);
+ const dom=document.createElement('th');dom.textContent='職域';dom.style.textAlign='left';tr.append(dom);
+ for(const [key,label] of cols){
+  const h=document.createElement('th'),btn=document.createElement('button'),symbol=document.createElement('span');
+  btn.type='button';btn.className='metric-sort';btn.onclick=()=>toggleSort(key);
+  btn.setAttribute('aria-sort',sortMetric===key?(sortDirection==='desc'?'descending':'ascending'):'none');
+  btn.title='依'+label+'排序；首次點擊降冪，再次點擊升冪';
+  btn.append(document.createTextNode(label));symbol.className='sort-symbol';symbol.textContent=sortMetric===key?(sortDirection==='desc'?'▼':'▲'):'⇅';btn.append(symbol);
+  if(label==='實動率')btn.title+='。定義：FYN>0的去重業務員人數';
+  if(label==='達標職域數')h.append(targetHelp());else h.append(btn);
+  // Also allow sorting on the existing special target-help column.
+  if(label==='達標職域數'){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依達標職域數排序';h.append(sort)}
+  th.querySelectorAll('th');tr.append(h);
+ }
+ th.append(tr);
  const tbody=byId('tbody');tbody.replaceChildren();
- const names=[...new Set(matching.map(childName))];
+ const names=sortedOrganizations([...new Set(matching.map(childName))],matching);
  const rows=[];
  for(const name of names){
    const group=matching.filter(e=>childName(e)===name);
@@ -285,7 +471,17 @@ function render(){
    }
    const d=document.createElement('td');d.textContent=row.domain;d.style.textAlign='left';r.append(d);
    const values=sum(row.items);
-   for(const [key] of cols){const cell=document.createElement('td');cell.textContent=fmt(values[key]);r.append(cell)}
+   for(const [key,label] of cols){
+    const cell=document.createElement('td');
+    if(DETAIL_METRICS.has(key)){
+     const button=document.createElement('button');button.type='button';button.className='detail-link';
+     button.textContent=fmt(values[key]);button.title='查看'+label+'的商品分類統計';
+     const scope=(row.name==='總計'?'通路／目前組織總計':row.name)+(row.domain==='總計'?'':'／'+row.domain);
+     button.onclick=()=>openMetricDetail(key,label,row.items,scope);
+     cell.append(button);
+    }else cell.textContent=fmt(values[key]);
+    r.append(cell)
+   }
    frag.append(r)
  }
  tbody.append(frag);
@@ -295,6 +491,11 @@ byId('dashboardMetricBtn').onclick=()=>{const menu=byId('dashboardMetricMenu');m
 byId('metricBtn').onclick=()=>{const menu=byId('metricMenu');menu.hidden=!menu.hidden;byId('metricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('dashboardMetricMenu').hidden=true;byId('dashboardMetricBtn').setAttribute('aria-expanded','false')};
 document.addEventListener('click',e=>{if(!e.target.closest('.metricbox')){for(const [menu,btn] of [['metricMenu','metricBtn'],['dashboardMetricMenu','dashboardMetricBtn']]){byId(menu).hidden=true;byId(btn).setAttribute('aria-expanded','false')}}});
 byId('apply').onclick=()=>{const a=byId('start').value,b=byId('end').value;if(!a||!b||a>b){alert('請選擇正確的日期區間');return}start=a;end=b;render()};
+byId('detailClose').onclick=()=>byId('metricDetailDialog').close();
+byId('detailDimension').onchange=renderMetricDetail;
+byId('orgFilterBtn').onclick=e=>{e.stopPropagation();const menu=byId('orgFilterMenu');menu.hidden=!menu.hidden;byId('orgFilterBtn').setAttribute('aria-expanded',String(!menu.hidden))};
+document.addEventListener('click',e=>{if(!e.target.closest('.org-filter')){byId('orgFilterMenu').hidden=true;byId('orgFilterBtn').setAttribute('aria-expanded','false')}});
+
 function toggleMenu(force){const mobile=window.matchMedia('(max-width:900px)').matches;if(mobile){const isOpen=force===undefined?!byId('sidebar').classList.contains('open'):force;byId('sidebar').classList.toggle('open',isOpen);byId('cover').classList.toggle('open',isOpen);byId('hamb').setAttribute('aria-expanded',String(isOpen))}else{const closed=force===undefined?!document.body.classList.contains('collapsed'):!force;document.body.classList.toggle('collapsed',closed);byId('hamb').setAttribute('aria-expanded',String(!closed))}}
 byId('hamb').onclick=()=>toggleMenu();byId('cover').onclick=()=>toggleMenu(false);
 for(const b of document.querySelectorAll('.nav')){b.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active');const name=b.dataset.view;byId('pagetitle').textContent=name;document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報';byId('performance').hidden=name!=='績效管理';byId('resources').hidden=name!=='經營資源';byId('stories').hidden=name!=='達人經驗談';byId('news').hidden=name!=='最新消息';byId('worksiteReport').hidden=name!=='職域新增、調整、刪除回報';byId('placeholder').hidden=name==='績效管理'||name==='經營資源'||name==='達人經驗談'||name==='最新消息'||name==='職域新增、調整、刪除回報';byId('subtitle').hidden=name==='職域新增、調整、刪除回報';byId('subtitle').textContent=name==='績效管理'?'組織績效總覽 · 逐層查看各職域經營成果':name==='經營資源'?'職域經營常用資源與服務入口':name==='達人經驗談'?'職域經營經驗分享 · 實戰技巧 DEMO':name==='職域新增、調整、刪除回報'?'':name==='最新消息'?'最新公告與重要職域資訊 · DEMO':'此功能將依後續需求擴充';if(window.matchMedia('(max-width:900px)').matches)toggleMenu(false)}}
