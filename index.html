@@ -131,7 +131,7 @@
 })();
 </script></head><body>
 <div class="closecover" id="cover"></div><aside class="sidebar" id="sidebar"><div class="brand"><span>W</span>職域經營平台</div><div class="navhint">功能選單</div><button class="nav" data-view="最新消息">◉　最新消息</button><button class="nav" data-view="經營資源">▤　經營資源</button><button class="nav" data-view="達人經驗談">✦　達人經驗談</button><button class="nav active" data-view="績效管理">▥　績效管理</button><button class="nav" data-view="職域新增、調整、刪除回報">✎　職域新增、調整、刪除回報</button><div class="navhint"></div></aside>
-<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 示範資料 · 非實際績效</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">三項整體業績拆分為其他業績及四個職域；下方比較今年與去年同期</p></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">示範數字為固定模擬資料；一般績效由下層彙總。「實動率」＝期間內 FYN &gt; 0 的不重複業務員人數 ÷ 同範圍全部不重複業務員人數 × 100%；各層及各職域分別計算，不直接加總百分比。手機可左右滑動查看欄位。</div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料為固定模擬值；各分類加總與所點選的統計表數字一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處為固定模擬保單資料，尾碼並非真實保單號碼。工作月依所選期間模擬分配，明細筆數對應職域FYN；正式核對需串接實際保單明細資料。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
+<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 示範資料 · 非實際績效</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span><span class="period" id="realDataStatus">載入 2025／2026 真實職域資料中…</span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">三項整體業績拆分為其他業績及四個職域；下方比較今年與去年同期</p></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">示範數字為固定模擬資料；一般績效由下層彙總。「實動率」＝期間內 FYN &gt; 0 的不重複業務員人數 ÷ 同範圍全部不重複業務員人數 × 100%；各層及各職域分別計算，不直接加總百分比。手機可左右滑動查看欄位。</div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料為固定模擬值；各分類加總與所點選的統計表數字一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處以 2025／2026 Excel 原始列且 AQ=1 統計，工作月取 C 欄，保單號碼僅顯示 J 欄最後四碼；一張保單可能有多筆業績。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▤</div><span class="resource-tag">活動補助 · DEMO</span><h2>客說會補助申請</h2><p>辦理職域客戶說明會時，快速了解活動補助申請方式、準備資料與核銷流程。</p><details><summary>查看示範流程 ▾</summary><ol><li>填寫活動名稱、日期、地點與預估人數。</li><li>準備活動規劃與預算資料。</li><li>提交主管審核後，依規定辦理核銷。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▣</div><span class="resource-tag">行政服務 · DEMO</span><h2>識別證補發</h2><p>協助駐廠或職域服務人員查詢識別證遺失、損壞及補發所需的申請步驟。</p><details><summary>查看示範流程 ▾</summary><ol><li>選擇遺失、毀損或資料異動原因。</li><li>準備申請人與服務據點基本資料。</li><li>送出補發申請並等待窗口通知領取。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▢</div><span class="resource-tag">客戶經營 · DEMO</span><h2>LINE客戶預約活動</h2><p>示範如何透過 LINE 邀請職域客戶預約諮詢、講座或定期服務活動。</p><details><summary>查看示範流程 ▾</summary><ol><li>設定活動主題、時段及可預約名額。</li><li>透過 LINE 分享預約資訊給客戶。</li><li>確認預約名單並安排活動提醒。</li></ol></details></article>
@@ -180,21 +180,19 @@ function allocateProducts(amount,seed,scope){
  return out
 }
 function productBreakdown(items,key,dimension){
- if(!DETAIL_METRICS.has(key))return [];
- const baseKey=OVERALL_TO_WORKSITE[key]||key;
- const isOverall=!!OVERALL_TO_WORKSITE[key];
- const grouped=new Map();
- for(const item of items){
-  const m=adjust(metrics(item.seed),item.seed);
-  const workplace=allocateProducts(m[baseKey],item.seed,baseKey);
-  const other=isOverall?allocateProducts(m[key]-m[baseKey],item.seed,'other-'+baseKey):null;
-  for(let i=0;i<PRODUCT_CATALOG.length;i++){
-   const value=workplace[i]+(other?other[i]:0);
-   const label=PRODUCT_CATALOG[i][dimension];
-   grouped.set(label,(grouped.get(label)||0)+value);
-  }
- }
- return [...grouped].filter(([,value])=>value>0).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name,'zh-TW'));
+ if(!DETAIL_METRICS.has(key)||!actualReady||OVERALL_TO_WORKSITE[key])return [];
+ const cols={fyc:2,fyn:3,premium:4},column=cols[key],grouped=new Map();
+ if(column===undefined)return [];
+ forEachActualRow(items,start,end,(_,row)=>{
+  let label='未分類';
+  if(dimension==='kind')label=actualManifest.productTypes[row[5]]||'未分類';
+  else if(dimension==='payment')label=actualManifest.payments[row[6]]||'未分類';
+  else if(dimension==='name')label=actualManifest.products[row[7]]||'未分類';
+  else if(dimension==='term')label=row[8]==null||row[8]===''?'未分類':String(row[8])+'年';
+  grouped.set(label,(grouped.get(label)||0)+(Number(row[column])||0));
+ });
+ return [...grouped].map(([name,value])=>({name,value})).filter(x=>x.value!==0)
+  .sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name,'zh-TW'));
 }
 let detailContext=null;
 function openMetricDetail(key,label,items,scope){
@@ -237,89 +235,92 @@ byId('start').value=yyyy+'-01-01';byId('end').value=dateStr(today);
 let path=[], start=byId('start').value,end=byId('end').value;
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function count(key,min,max){return min+(hash(key)%(max-min+1))}
-const persons=['A','B','C'];const entries=[];
-for(const [region,district,office] of ORGANIZATIONS){for(const agent of persons){for(const domain of DOMAINS){entries.push({path:[region,district,office,agent],domain,seed:region+'|'+district+'|'+office+'|'+agent+'|'+domain})}}}
-function metrics(seed,year=Number(end.slice(0,4))){
- const sites=count(seed+'s',1,4),ops=count(seed+'o',1,3),active=Math.min(sites,ops,count(seed+'a',1,3));
- const domain=seed.slice(seed.lastIndexOf('|')+1);
- const agentPath=seed.slice(0,seed.lastIndexOf('|'));
- const agentLabel=agentPath.slice(agentPath.lastIndexOf('|')+1);
- // Same agent across all four workplace domains has a consistent sales status.
- // One active agent per office is guaranteed; other agents vary deterministically.
- const producing=agentLabel==='A'||count(agentPath+'|'+year+'|producing',0,99)<(agentLabel==='B'?75:45);
- const trends={'闔家安康':1.26,'醫護公會':0.91,'台積電':1.43,'駐廠':1.17};
- const annualTrend=year===2026?(trends[domain]||1):1;
- const yearly=(key)=>annualTrend*(0.95+count(seed+'|'+year+'|'+key,0,10)/100);
- return {
-  worksites:sites,operators:ops*count(seed+'operatorScale',8,12)+count(seed+'operatorExtra',1,3),active,
-  fyc:producing?Math.max(1,Math.round(active*count(seed+'f',1800,18500)*yearly('fyc'))):0,
-  fyn:producing?Math.max(1,Math.round(active*count(seed+'n',1,4)*yearly('fyn'))):0,
-  premium:producing?Math.max(1,Math.round(active*count(seed+'p',40000,210000)*yearly('premium'))):0,
-  group:count(seed+'g',1,19),claims:count(seed+'c',1,9),line:count(seed+'l',1,10)
- }
+const entries=[];
+let actualManifest=null,actualReady=false,loadingIssue=null;
+async function readCompressedShard(url){
+ const response=await fetch(url,{cache:'no-cache'});
+ if(!response.ok)throw new Error('資料下載失敗：'+url+'（'+response.status+'）');
+ const raw=Uint8Array.from(atob((await response.text()).trim()),x=>x.charCodeAt(0));
+ if(typeof DecompressionStream!=='function')throw new Error('請使用支援 GZIP 的新版 Chrome/Edge');
+ const bytes=new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'));
+ return JSON.parse(await new Response(bytes).text());
 }
-function shiftYear(date,offset){
- if(!offset)return date;
+async function loadActualData(){
+ const status=byId('realDataStatus');
+ try{
+  const response=await fetch('data/manifest.json',{cache:'no-cache'});
+  if(!response.ok)throw new Error('索引載入失敗（'+response.status+'）');
+  const m=await response.json();
+  if(m.format!=='WorkSiteKGI-demo-real-v1')throw new Error('資料版本不一致');
+  const blocks=await Promise.all(m.shards.map(async x=>({month:x.month,rows:await readCompressedShard('data/'+x.file),expected:x.rows})));
+  const indexed=new Map(),tally={2025:0,2026:0};
+  for(const block of blocks){
+   if(block.rows.length!==block.expected)throw new Error(block.month+' 資料筆數驗證錯誤');
+   for(const row of block.rows){
+    const person=m.agents[row[0]],domain=m.domains[row[1]];
+    if(!person||!domain)throw new Error('未知組織或職域索引');
+    const key=row[0]+'|'+row[1];
+    let item=indexed.get(key);
+    if(!item){item={path:person.slice(),domain,rows:[],seed:key};indexed.set(key,item);entries.push(item)}
+    item.rows.push({month:block.month,v:row});
+    tally[block.month.slice(0,4)]++;
+   }
+  }
+  for(const year of ['2025','2026'])if(tally[year]!==Number(m.audit[year].rows))throw new Error(year+' 來源總列數錯誤');
+  actualManifest=m;actualReady=true;
+  DOMAINS.splice(0,DOMAINS.length,...m.domains);
+  const colors=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
+  DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...colors.slice(0,DOMAINS.length));
+  status.textContent='真實職域資料：2025年 '+fmt(tally[2025])+' 筆、2026年 '+fmt(tally[2026])+' 筆（AQ=1）';
+  status.title='來源 D:G 組織、C 工作月、K/L/N 業績、J 後四碼；按月統計。';
+  render();
+ }catch(e){loadingIssue=String(e.message||e);status.textContent='真實資料讀取失敗：'+loadingIssue;render()}
+}
+function inWorkMonthRange(month,a,b){
+ return month>=a.slice(0,7).replace('-','')&&month<=b.slice(0,7).replace('-','');
+}
+function forEachActualRow(items,a,b,cb){
+ for(const item of items)for(const entry of item.rows)if(inWorkMonthRange(entry.month,a,b))cb(item,entry.v,entry.month);
+}
+function shiftYear(date,delta){
+ if(!delta)return date;
  const d=new Date(date+'T00:00:00'),day=d.getDate();
- d.setDate(1);d.setFullYear(d.getFullYear()+offset);
- d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
- return dateStr(d);
-}
-function adjust(m,seed,periodStart=start,periodEnd=end){
- const a=new Date(periodStart+'T00:00:00'),b=new Date(periodEnd+'T00:00:00');
- const days=Math.max(1,Math.round((b-a)/86400000)+1),factor=Math.min(1,days/365);
- const o={};
- // Demo rows should not turn blank for valid date ranges, including very short intervals.
- for(const [key,value] of Object.entries(m))o[key]=value>0?Math.max(1,Math.round(value*factor)):0;
- for(const [overallKey,workplaceKey] of Object.entries(OVERALL_TO_WORKSITE)){
-  const workplace=o[workplaceKey],ratio=1.2+count(seed+'|'+overallKey,0,380)/100;
-  o[overallKey]=workplace?Math.max(Math.ceil(workplace*1.2),Math.min(Math.floor(workplace*5),Math.round(workplace*ratio))):0;
- }
- return o
+ d.setDate(1);d.setFullYear(d.getFullYear()+delta);
+ d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return dateStr(d);
 }
 function sum(items,yearOffset=0){
- const result=Object.fromEntries(METRICS.map(m=>[m[0],0]));
- const year=Number(end.slice(0,4))+yearOffset;
- const periodStart=shiftYear(start,yearOffset),periodEnd=shiftYear(end,yearOffset);
- const producingAgents=new Set(),allAgents=new Set(),distinctTeams=new Set(),distinctNewcomers=new Set();
- for(const item of items){
-  const m=adjust(metrics(item.seed,year),item.seed,periodStart,periodEnd);
-  // A person can appear in all four workplace domains, but counts only once
-  // within the filtered organization/row if their overall FYN is positive.
-  const agentId=item.path.join('|');
-  allAgents.add(agentId);
-  if(m.totalFyn>0)producingAgents.add(agentId);
-  distinctTeams.add(item.path.slice(0,3).join('|')+'|'+count(agentId+'|team',1,3));
-  if(count(agentId+'|newcomer',0,99)<24)distinctNewcomers.add(agentId);
-  for(const key in m)result[key]+=m[key];
- }
- result.teamCount=distinctTeams.size;
- result.newcomers=distinctNewcomers.size;
- result.activityRate=allAgents.size?Math.round(producingAgents.size/allAgents.size*1000)/10:0;
- for(const [key,[worksite,total]] of Object.entries(WORKPLACE_SHARES)){
-  result[key]=result[total]>0?Math.round(result[worksite]/result[total]*1000)/10:0;
- }
- return result
+ const result=Object.fromEntries(METRICS.map(([k])=>[k,null]));
+ const a=shiftYear(start,yearOffset),b=shiftYear(end,yearOffset);
+ const years=[];for(let year=Number(a.slice(0,4));year<=Number(b.slice(0,4));year++)years.push(String(year));
+ if(!actualReady||years.some(year=>!actualManifest.audit[year]))return result;
+ result.fyc=0;result.fyn=0;result.premium=0;
+ const people=new Map();
+ forEachActualRow(items,a,b,(item,row)=>{
+  const id=item.path.join('|');
+  people.set(id,(people.get(id)||0)+(Number(row[3])||0));
+  result.fyc+=Number(row[2])||0;
+  result.fyn+=Number(row[3])||0;
+  result.premium+=Number(row[4])||0;
+ });
+ result.operators=people.size;
+ const positive=[...people.values()].filter(v=>v>0).length;
+ result.activityRate=people.size?Math.round(positive/people.size*1000)/10:0;
+ // No roster, team, newcomer, workplace targets, whole-channel figures or non-workplace data in these files.
+ // Unsupported fields remain null rather than fabricate values.
+ return result;
 }
 function fmt(n){return Number(n).toLocaleString('zh-TW')}
 
 /* Policy audit demo is derived from precisely the same leaf records as workplace FYN. */
 function simulatedPolicies(items,periodStart=start,periodEnd=end){
- const from=Number(periodStart.slice(0,4))*12+Number(periodStart.slice(5,7))-1;
- const to=Number(periodEnd.slice(0,4))*12+Number(periodEnd.slice(5,7))-1;
- const monthCount=Math.max(1,to-from+1),records=[];
- const year=Number(periodEnd.slice(0,4));
- for(const item of items){
-  const amount=adjust(metrics(item.seed,year),item.seed,periodStart,periodEnd).fyn;
-  for(let i=0;i<amount;i++){
-   const monthOffset=count(item.seed+'|policy-month|'+i+'|'+periodStart+'|'+periodEnd,0,monthCount-1);
-   const monthNumber=from+monthOffset,workYear=Math.floor(monthNumber/12);
-   const workMonth=String(monthNumber%12+1).padStart(2,'0');
-   const suffix=String(count(item.seed+'|policy|'+i,0,9999)).padStart(4,'0');
-   records.push({domain:item.domain,workMonth:workYear+'/'+workMonth,suffix});
-  }
- }
- return records.sort((a,b)=>b.workMonth.localeCompare(a.workMonth)||DOMAINS.indexOf(a.domain)-DOMAINS.indexOf(b.domain)||a.suffix.localeCompare(b.suffix));
+ if(!actualReady)return [];
+ const rows=[];
+ forEachActualRow(items,periodStart,periodEnd,(item,r,month)=>{
+  rows.push({domain:item.domain,workMonth:month.slice(0,4)+'/'+month.slice(4),
+   suffix:String(r[9]??'').slice(-4),fyn:Number(r[3])||0});
+ });
+ return rows.sort((a,b)=>b.workMonth.localeCompare(a.workMonth)||
+  DOMAINS.indexOf(a.domain)-DOMAINS.indexOf(b.domain));
 }
 let policyVisibleEntries=[];
 function openPolicyDetails(items){
@@ -341,7 +342,7 @@ function renderPolicyDetails(){
  const items=policyVisibleEntries.filter(x=>x.path[3]===selected);
  const records=simulatedPolicies(items);
  const expected=sum(items).fyn;
- byId('policyCount').textContent='職域FYN：'+fmt(expected)+' 件';
+ byId('policyCount').textContent='資料列 '+fmt(records.length)+' 筆｜職域FYN '+fmt(expected);
  const rows=byId('policyRows');rows.replaceChildren();
  for(const record of records){
   const tr=document.createElement('tr');
@@ -351,11 +352,7 @@ function renderPolicyDetails(){
   rows.append(tr);
  }
  byId('policyEmpty').hidden=records.length>0;
- // The detail is intentionally always reconciled against the filtered
- // salesperson's workplace FYN, including non-producing agents.
- byId('policyConsistency').textContent=records.length===expected
-  ?'已列示 '+fmt(records.length)+' 筆；與此業務員職域FYN一致。'
-  :'明細筆數與職域FYN不一致，請檢查示範資料。';
+ byId('policyConsistency').textContent='來源 Excel 的資料列 '+fmt(records.length)+' 筆；FYN 為實際淨值，可能有小數或沖銷，並非保單筆數。';
 }
 
 function fmtFixed(n,digits=1){return Number(n).toLocaleString('zh-TW',{minimumFractionDigits:digits,maximumFractionDigits:digits})}
@@ -434,7 +431,7 @@ function sortedOrganizations(names,matching){
 function childName(e){return e.path[path.length]}
 function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
-const DOMAIN_COLORS=['#2463c5','#ed8b2c','#119b87','#943fc1'];
+const DOMAIN_COLORS=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
 const TARGETS=[['闔家安康','6C'],['醫護公會',null],['台積電','72C'],['駐廠',null]];
 function targetHelp(){
  const wrap=document.createElement('span');wrap.className='target-help';
@@ -779,8 +776,6 @@ function initReportForm(){
  syncDistrict();syncType();
 }
 initReportForm();
-// 示範職域名單；正式資料尚未串接，避免誤以為是真實在職資料。
-
-
 render();
+loadActualData();
 </script></body></html>
