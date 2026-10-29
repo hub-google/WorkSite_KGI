@@ -31,8 +31,9 @@
 <script>
 const ORGANIZATIONS=[["北二區域","台北業務三區","昕立通訊處"],["北二區域","台北業務三區","誠山通訊處"],["北二區域","台北業務三區","威力通訊處"],["北二區域","台北業務三區","北二直轄一通訊處"],["北二區域","台北業務三區","駿山通訊處"],["北二區域","台北業務三區","昊陽通訊處"],["北二區域","台北業務三區","山通訊處"],["北二區域","台北業務三區","玉山通訊處"],["北二區域","台北業務三區","華山通訊處"],["北二區域","台北業務三區","駿鋮通訊處"],["北二區域","台北業務四區","宏觀通訊處"],["北二區域","台北業務四區","崧峰通訊處"],["北二區域","台北業務四區","鴻山通訊處"],["北二區域","台北業務四區","東山通訊處"],["北二區域","台北業務四區","凌山通訊處"],["北二區域","台北業務四區","展毓通訊處"],["北二區域","台北業務四區","慶昇通訊處"],["北二區域","台北業務四區","臻觀通訊處"],["北二區域","台北業務四區","忠信通訊處"],["北二區域","台北業務四區","敦煌通訊處"],["北二區域","台北業務四區","洽山通訊處"],["北二區域","台北業務四區","宏國通訊處"],["北二區域","台北業務四區","雙贏通訊處"],["北一區域","台北業務二區","躍勇通訊處"],["北一區域","台北業務二區","創建通訊處"],["北一區域","台北業務二區","北一直轄三通訊處"],["北一區域","台北業務二區","越鋒通訊處"],["北一區域","台北業務二區","毅品通訊處"],["北一區域","台北業務二區","昇晴通訊處"],["北一區域","台北業務二區","泉泰通訊處"],["北一區域","台北業務二區","非凡通訊處"],["北一區域","台北業務二區","北一直轄一通訊處"],["北一區域","台北業務二區","大衛通訊處"],["北一區域","台北業務二區","民生通訊處"],["北一區域","台北業務二區","昭才通訊處"],["北一區域","台北業務一區","應許通訊處"],["北一區域","台北業務一區","金昱通訊處"],["北一區域","台北業務一區","昊昱通訊處"],["北一區域","台北業務一區","宏運通訊處"],["北一區域","台北業務一區","北一直轄二通訊處"],["北一區域","台北業務一區","豐格通訊處"],["北一區域","台北業務一區","鴻海通訊處"],["北一區域","台北業務一區","金彥通訊處"],["北一區域","台北業務一區","承暘通訊處"],["北一區域","台北業務一區","恩典通訊處"],["北一區域","台北業務一區","奇異通訊處"],["桃竹區域","新竹業務區","昌羿通訊處"],["桃竹區域","新竹業務區","昊通訊處"],["桃竹區域","新竹業務區","亞威通訊處"],["桃竹區域","新竹業務區","新竹直轄通訊處"],["桃竹區域","新竹業務區","北大通訊處"],["桃竹區域","新竹業務區","孔明通訊處"],["桃竹區域","新竹業務區","大昇通訊處"],["桃竹區域","桃園業務區","瑞興通訊處"],["桃竹區域","桃園業務區","上千通訊處"],["桃竹區域","桃園業務區","瑞至通訊處"],["桃竹區域","桃園業務區","皇城通訊處"],["桃竹區域","桃園業務區","虹燁通訊處"],["桃竹區域","桃園業務區","瑞峰通訊處"],["桃竹區域","桃園業務區","金躍通訊處"],["桃竹區域","桃園業務區","金峰通訊處"],["桃竹區域","桃園業務區","躍昇通訊處"],["桃竹區域","桃園業務區","巨朋通訊處"],["桃竹區域","桃園業務區","桃園直轄通訊處"],["中嘉區域","台中業務二區","菁業通訊處"],["中嘉區域","台中業務二區","建國通訊處"],["中嘉區域","台中業務二區","聖達通訊處"],["中嘉區域","台中業務二區","大銘通訊處"],["中嘉區域","台中業務二區","俞傑通訊處"],["中嘉區域","台中業務二區","群富通訊處"],["中嘉區域","台中業務二區","奕震通訊處"],["中嘉區域","台中業務二區","大華通訊處"],["中嘉區域","台中業務一區","詠續通訊處"],["中嘉區域","台中業務一區","嘉銓通訊處"],["中嘉區域","台中業務一區","太陽通訊處"],["中嘉區域","台中業務一區","棠山通訊處"],["中嘉區域","台中業務一區","福鵬直轄通訊處"],["中嘉區域","台中業務一區","威任通訊處"],["中嘉區域","台中業務一區","明冠通訊處"],["中嘉區域","台中業務一區","凱旋通訊處"],["中嘉區域","台中業務一區","富山通訊處"],["中嘉區域","台中業務一區","禾順通訊處"],["中嘉區域","台中業務一區","日兆通訊處"],["中嘉區域","嘉義業務區","保富通訊處"],["中嘉區域","嘉義業務區","嘉義通訊處"],["中嘉區域","嘉義業務區","上慶通訊處"],["中嘉區域","嘉義業務區","嘉誠通訊處"],["中嘉區域","嘉義業務區","雲林直轄通訊處"],["中嘉區域","嘉義業務區","金揚通訊處"],["台南區域","台南業務一區","金達通訊處"],["台南區域","台南業務一區","今誠通訊處"],["台南區域","台南業務一區","金豪通訊處"],["台南區域","台南業務一區","立捷通訊處"],["台南區域","台南業務一區","慶亞通訊處"],["台南區域","台南業務一區","金冠通訊處"],["台南區域","台南業務一區","金美通訊處"],["台南區域","台南業務一區","台南通訊處"],["台南區域","台南業務二區","菁英通訊處"],["台南區域","台南業務二區","立富通訊處"],["台南區域","台南業務二區","南英通訊處"],["台南區域","台南業務二區","松慶通訊處"],["台南區域","台南業務二區","冠英通訊處"],["台南區域","台南業務二區","廣慶通訊處"],["台南區域","台南業務二區","樺慶通訊處"],["高屏區域","高屏業務一區","七賢通訊處"],["高屏區域","高屏業務一區","順誠通訊處"],["高屏區域","高屏業務一區","崇慶通訊處"],["高屏區域","高屏業務一區","尚誠通訊處"],["高屏區域","高屏業務一區","佳慶通訊處"],["高屏區域","高屏業務一區","信誠通訊處"],["高屏區域","高屏業務一區","泰誠通訊處"],["高屏區域","高屏業務一區","睿誠通訊處"],["高屏區域","高屏業務一區","三多通訊處"],["高屏區域","高屏業務一區","韋誠通訊處"],["高屏區域","高屏業務一區","台東通訊處"],["高屏區域","高屏業務一區","樂誠通訊處"],["高屏區域","高屏業務一區","高宏通訊處"],["高屏區域","高屏業務一區","一心通訊處"],["高屏區域","高屏業務二區","冠慶通訊處"],["高屏區域","高屏業務二區","至慶通訊處"],["高屏區域","高屏業務二區","高雄直轄一通訊處"],["高屏區域","高屏業務二區","德山通訊處"],["高屏區域","高屏業務二區","力慶通訊處"],["高屏區域","高屏業務二區","灞霖通訊處"],["高屏區域","高屏業務二區","彩榮通訊處"],["高屏區域","高屏業務二區","宏慶通訊處"],["高屏區域","高屏業務二區","翔大通訊處"]];
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠'];
-const METRICS=[['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['fyc','職域FYC'],['fyn','職域FYN'],['premium','職域保費'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
-const VISIBLE=new Set(METRICS.slice(0,6).map(m=>m[0]));
+const METRICS=[['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['totalFyc','FYC'],['fyc','職域FYC'],['totalFyn','FYN'],['fyn','職域FYN'],['totalPremium','保費'],['premium','職域保費'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
+const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
+const VISIBLE=new Set(METRICS.slice(0,9).map(m=>m[0]));
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
 const byId=id=>document.getElementById(id);
 const today=new Date(), yyyy=today.getFullYear(), pad=n=>String(n).padStart(2,'0'), dateStr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -43,8 +44,18 @@ function count(key,min,max){return min+(hash(key)%(max-min+1))}
 const persons=['A','B','C'];const entries=[];
 for(const [region,district,office] of ORGANIZATIONS){for(const agent of persons){for(const domain of DOMAINS){entries.push({path:[region,district,office,agent],domain,seed:region+'|'+district+'|'+office+'|'+agent+'|'+domain})}}}
 function metrics(seed){const sites=count(seed+'s',0,3),ops=count(seed+'o',0,2),active=Math.min(ops,count(seed+'a',0,2));return {worksites:sites,operators:ops===0?0:ops*count(seed+'operatorScale',8,12)+count(seed+'operatorExtra',0,3),active:active,fyc:active*count(seed+'f',1800,18500),fyn:active*count(seed+'n',1,4),premium:active*count(seed+'p',40000,210000),group:count(seed+'g',0,19),claims:count(seed+'c',0,9),line:count(seed+'l',0,10)}}
-function adjust(m){const a=new Date(start+'T00:00:00'),b=new Date(end+'T00:00:00'),days=Math.max(1,(b-a)/86400000+1),factor=Math.min(1,days/365);const o={};for(const [k,v] of Object.entries(m)){o[k]=Math.round(v*factor)}return o}
-function sum(items){const result=Object.fromEntries(METRICS.map(m=>[m[0],0]));for(const item of items){const m=adjust(metrics(item.seed));for(const k in result)result[k]+=m[k]}return result}
+function adjust(m,seed){
+ const a=new Date(start+'T00:00:00'),b=new Date(end+'T00:00:00'),days=Math.max(1,(b-a)/86400000+1),factor=Math.min(1,days/365);
+ const o={};for(const [k,v] of Object.entries(m))o[k]=Math.round(v*factor);
+ // Deterministic seeded ratios; compute after date rounding to preserve the overall/worksite bounds.
+ for(const [overallKey,workplaceKey] of Object.entries(OVERALL_TO_WORKSITE)){
+  const workplace=o[workplaceKey];
+  const ratio=1.2+count(seed+'|'+overallKey,0,380)/100;
+  o[overallKey]=workplace===0?0:Math.max(Math.ceil(workplace*1.2),Math.min(Math.floor(workplace*5),Math.round(workplace*ratio)));
+ }
+ return o
+}
+function sum(items){const result=Object.fromEntries(METRICS.map(m=>[m[0],0]));for(const item of items){const m=adjust(metrics(item.seed),item.seed);for(const k in result)result[k]+=m[k]}return result}
 function fmt(n){return n.toLocaleString('zh-TW')}
 function childName(e){return e.path[path.length]}
 function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
@@ -65,32 +76,34 @@ document.addEventListener('click',e=>{if(!e.target.closest('.target-help'))docum
 function renderDashboard(items){
  const root=byId('dashboardGrid');root.replaceChildren();
  const domainTotals=DOMAINS.map((domain,i)=>({domain,color:DOMAIN_COLORS[i],data:sum(items.filter(x=>x.domain===domain))}));
+ const organizationTotals=sum(items);
  const ns='http://www.w3.org/2000/svg';
  const node=(tag,attrs={},content)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));if(content!==undefined)el.textContent=String(content);return el};
  const point=(cx,cy,r,angle)=>({x:cx+r*Math.cos(angle),y:cy+r*Math.sin(angle)});
  const displayValue=n=>Math.abs(n)>=10000?(n/10000).toFixed(1)+'萬':fmt(n);
  for(const [key,label] of METRICS.filter(([key])=>VISIBLE.has(key))){
-  const values=domainTotals.map(x=>x.data[key]),total=values.reduce((a,b)=>a+b,0);
+  const workplaceKey=OVERALL_TO_WORKSITE[key];
+  const breakdown=workplaceKey
+   ? [{domain:'職域業績',color:DOMAIN_COLORS[0],value:organizationTotals[workplaceKey]},
+      {domain:'非職域業績',color:DOMAIN_COLORS[1],value:organizationTotals[key]-organizationTotals[workplaceKey]}]
+   : domainTotals.map(x=>({domain:x.domain,color:x.color,value:x.data[key]}));
+  const values=breakdown.map(x=>x.value),total=values.reduce((a,b)=>a+b,0);
   const card=document.createElement('article');card.className='metric-card';
   const heading=document.createElement('h3');if(key==='active')heading.append(targetHelp());else heading.textContent=label;card.append(heading);
-  const svg=node('svg',{viewBox:'0 0 440 290',class:'kpi-donut',role:'img','aria-label':label+'總計'+fmt(total)+'；'+domainTotals.map(x=>x.domain+fmt(x.data[key])).join('、')});
+  const svg=node('svg',{viewBox:'0 0 440 290',class:'kpi-donut',role:'img','aria-label':label+'總計'+fmt(total)+'；'+breakdown.map(x=>x.domain+fmt(x.value)).join('、')});
   const cx=220,cy=146,ro=93,ri=52;
-  const callouts=[
-   {tx:112,ty:84},
-   {tx:328,ty:84},
-   {tx:328,ty:206},
-   {tx:112,ty:206}
-  ];
-  // Visual order is fixed to match the selected reference: blue top-left, orange top-right,
-  // green bottom-right, purple bottom-left; proportions and endpoints remain data-driven.
-  const order=[1,2,3,0];
+  const callouts=workplaceKey
+   ? [{tx:112,ty:146},{tx:328,ty:146}]
+   : [{tx:112,ty:84},{tx:328,ty:84},{tx:328,ty:206},{tx:112,ty:206}];
+  // Overall KPIs split into workplace and non-workplace; workplace KPIs retain the original four categories.
+  const order=workplaceKey?[0,1]:[1,2,3,0];
   let current=-Math.PI/2;
   const sectorGroup=node('g');svg.append(sectorGroup);
   if(total===0){
    sectorGroup.append(node('circle',{cx,cy,r:(ro+ri)/2,fill:'none',stroke:'#e3eaf0','stroke-width':ro-ri}));
   }
   for(const i of order){
-   const x=domainTotals[i],share=total?values[i]/total:0;
+   const x=breakdown[i],share=total?values[i]/total:0;
    const sweep=share*Math.PI*2,start=current,end=current+sweep,mid=(start+end)/2;
    if(share>0){
     // Arc path ring segment. For 100%, split into two arcs (SVG elliptical arc cannot draw a full circle).
@@ -114,7 +127,7 @@ function renderDashboard(items){
   }
   svg.append(node('text',{x:cx,y:cy-1,'text-anchor':'middle',fill:'#183955','font-size':25,'font-weight':750},displayValue(total)));
   svg.append(node('text',{x:cx,y:cy+20,'text-anchor':'middle',fill:'#7b8fa1','font-size':12},'總計'));
-  domainTotals.forEach((x,i)=>{
+  breakdown.forEach((x,i)=>{
     const loc=callouts[i],right=i===1||i===2,align=right?'start':'end';
     svg.append(node('text',{x:loc.tx,y:loc.ty-3,'text-anchor':align,fill:'#324e67','font-size':13},x.domain));
     svg.append(node('text',{x:loc.tx,y:loc.ty+16,'text-anchor':align,fill:'#183955','font-size':17,'font-weight':750},displayValue(values[i])));
@@ -160,7 +173,13 @@ function render(){
    }
    const d=document.createElement('td');d.textContent=row.domain;d.style.textAlign='left';r.append(d);
    const values=sum(row.items);
-   for(const [key] of cols){const cell=document.createElement('td');cell.textContent=fmt(values[key]);r.append(cell)}
+   for(const [key] of cols){
+    const cell=document.createElement('td');
+    if(OVERALL_TO_WORKSITE[key]&&!row.subtotal&&!row.grandTotal){
+     cell.textContent='—';cell.title='整體業績不拆分至各職域，請查看組織總計列';
+    }else cell.textContent=fmt(values[key]);
+    r.append(cell)
+   }
    frag.append(r)
  }
  tbody.append(frag);
