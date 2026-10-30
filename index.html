@@ -123,6 +123,17 @@
 .policy-table td:last-child{letter-spacing:1px;font-weight:700}
 .policy-reconcile{font-size:12px;color:#40718d;margin:12px 0 0}
 @media(max-width:550px){.policy-controls .policy-count{width:100%;margin-left:0}.policy-table th,.policy-table td{padding:10px 8px}}
+
+/* Compact chart without external callouts: fixed legend rows prevent overlapping text. */
+#dashboardGrid .ring-svg{max-width:345px;display:block;margin:3px auto 0}
+.ring-legend{display:grid;gap:0;border-top:1px solid #e5edf3;margin:0 10px 5px}
+.ring-legend-row{display:grid;grid-template-columns:11px minmax(0,1fr) auto 56px;column-gap:9px;align-items:center;padding:10px 3px;min-width:0}
+.ring-legend-row+.ring-legend-row{border-top:1px dashed #e9edf2}
+.ring-legend-swatch{display:block;width:10px;height:10px;border-radius:3px}
+.ring-legend-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:650;color:#30475f}
+.ring-legend-amount{white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums;color:#4b657c;text-align:right}
+.ring-legend-share{white-space:nowrap;text-align:right;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#42617b}
+@media(max-width:480px){.ring-legend{margin-inline:4px}.ring-legend-row{grid-template-columns:10px minmax(0,1fr) auto 47px;column-gap:6px}.ring-legend-name{font-size:12px}.ring-legend-amount,.ring-legend-share{font-size:11px}}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -151,7 +162,8 @@
 </div><p class="resource-note">※ 本頁兩則公告皆為 DEMO，沒有正式公告效力，也不提供實際申請入口。</p></section><section id="worksiteReport" class="panel report-panel" hidden><form id="reportForm" class="report-body"><fieldset class="report-types"><legend>1. 回報類型 <em>*</em></legend><label><input type="radio" name="reportType" value="新增" checked> 新增職域</label><label><input type="radio" name="reportType" value="調整"> 調整職域</label><label><input type="radio" name="reportType" value="刪除"> 刪除職域</label></fieldset><div id="reportAddFields"><h3>2. 職域基本資料</h3><div class="report-grid"><label>職域名稱 <em>*</em><input name="siteName" required maxlength="100" placeholder="例如：○○科技股份有限公司"></label><label>電話（選填）<input name="sitePhone" type="tel" inputmode="tel" pattern="[0-9+()#extEXT分機－— -]{6,25}" title="請輸入有效電話，例如 02-12345678"></label><label>員工人數 <em>*</em><input name="employees" type="number" required min="0" max="9999999" step="1" placeholder="例如 500"></label></div><h3>3. 結構化地址</h3><div class="report-grid"><label>縣市 <em>*</em><select id="reportCity" name="city" required><option value="">請選擇縣市</option></select></label><label>行政區 <em>*</em><select id="reportDistrict" name="district" required disabled><option value="">請先選擇縣市</option></select></label><label>路／街 <em>*</em><input name="road" required maxlength="80" placeholder="例如：信義路"></label><label>段（選填）<select name="section"><option value="">無</option><option>一段</option><option>二段</option><option>三段</option><option>四段</option><option>五段</option><option>六段</option><option>七段</option><option>八段</option><option>九段</option><option>十段</option></select></label><label>巷（選填）<input name="lane" inputmode="numeric" type="number" min="1" step="1" placeholder="例如：20"></label><label>弄（選填）<input name="alley" inputmode="numeric" type="number" min="1" step="1" placeholder="例如：8"></label><label>號 <em>*</em><input name="number" required placeholder="例如：7 或 7-1" pattern="[0-9０-９]+(?:[-－之][0-9０-９]+)?" title="例如 7、7-1 或 7之1"></label><label>樓（選填）<input name="floor" placeholder="例如：8 或 B1" maxlength="12"></label><label>室／之（選填）<input name="suite" placeholder="例如：之1、801室" maxlength="20"></label><label class="report-wide">其他備註（選填）<textarea name="note" rows="2" maxlength="400" placeholder="僅填寫無法用上述欄位表達的補充資訊"></textarea></label></div><p class="report-hint">※ 必填欄位標示 *。縣市及行政區採連動下拉選單，其他地址元件拆欄輸入。</p></div><div id="reportDeleteFields" hidden><h3>2. 刪除職域資料</h3><div class="report-grid"><label>職域代碼 <em>*</em><input name="worksiteCode" maxlength="40" placeholder="請輸入要刪除的職域代碼" disabled></label></div></div><div class="report-actions"><button type="submit" class="primary">送出</button><button type="reset" class="outline">清除重填</button></div><div class="report-result" id="reportResult" role="status" aria-live="polite" hidden></div></form></section><section id="placeholder" class="panel stub" hidden><h2>功能規劃中</h2><p>此模組會依後續需求逐步建立。</p></section></main></div>
 <script>
 const ORGANIZATIONS=[]; // Loaded from D:G via data/manifest.json
-const DOMAINS=['闔家安康','醫護公會','台積電','駐廠'];
+const DOMAINS=['闔家安康','醫護公會','台積電','駐廠職域'];
+const normalizeDomain=name=>name==='駐廠'?'駐廠職域':name;
 const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
 const WORKPLACE_SHARES={fycShare:['fyc','totalFyc'],fynShare:['fyn','totalFyn'],premiumShare:['premium','totalPremium']};
 const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
@@ -241,7 +253,7 @@ let path=[], start=byId('start').value,end=byId('end').value;
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function count(key,min,max){return min+(hash(key)%(max-min+1))}
 const entries=[];
-let actualManifest=null,actualReady=false,loadingIssue=null;
+let actualManifest=null,actualReady=false,loadingIssue=null,worksiteReady=false,worksiteSource=null;
 async function readCompressedShard(url){
  const response=await fetch(url,{cache:'no-cache'});
  if(!response.ok)throw new Error('資料下載失敗：'+url+'（'+response.status+'）');
@@ -249,6 +261,28 @@ async function readCompressedShard(url){
  if(typeof DecompressionStream!=='function')throw new Error('請使用支援 GZIP 的新版 Chrome/Edge');
  const bytes=new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'));
  return JSON.parse(await new Response(bytes).text());
+}
+async function loadWorksiteData(){
+ const w=await readCompressedShard('data/worksite-sites.txt');
+ if(w.rows!==70587||w.sites!==47155||!Array.isArray(w.groups))throw new Error('職域名冊資料驗證失敗');
+ const indexed=new Map(entries.map(it=>[JSON.stringify([...it.path,it.domain]),it]));
+ const allDomains=new Set(DOMAINS);
+ for(const group of w.groups){
+  const org=group.slice(0,4).map(x=>x||'未分派');
+  const domain=normalizeDomain(group[4]);
+  const key=JSON.stringify([...org,domain]);
+  let item=indexed.get(key);
+  if(!item){
+   item={path:org,domain,seed:'site-'+indexed.size,rows:[],siteIds:new Set()};
+   indexed.set(key,item);entries.push(item);
+  }
+  if(!item.siteIds)item.siteIds=new Set();
+  for(const siteId of group[5])item.siteIds.add(siteId);
+  allDomains.add(domain);
+ }
+ DOMAINS.splice(0,DOMAINS.length,...allDomains);
+ DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...['#3273c4','#ed8b2c','#169c90','#9762ba','#ef6c79','#b7a04e','#8396aa'].slice(0,DOMAINS.length));
+ worksiteSource=w;worksiteReady=true;
 }
 async function loadActualData(){
  const status=byId('realDataStatus');
@@ -262,7 +296,7 @@ async function loadActualData(){
   for(const block of blocks){
    if(block.rows.length!==block.expected)throw new Error(block.month+' 資料筆數驗證錯誤');
    for(const row of block.rows){
-    const person=m.agents[row[0]],domain=m.domains[row[1]];
+    const person=m.agents[row[0]],domain=normalizeDomain(m.domains[row[1]]);
     if(!person||!domain)throw new Error('未知組織或職域索引');
     const key=row[0]+'|'+row[1];
     let item=indexed.get(key);
@@ -273,11 +307,14 @@ async function loadActualData(){
   }
   for(const year of ['2025','2026'])if(tally[year]!==Number(m.audit[year].rows))throw new Error(year+' 來源總列數錯誤');
   actualManifest=m;actualReady=true;
-  DOMAINS.splice(0,DOMAINS.length,...m.domains);
+  DOMAINS.splice(0,DOMAINS.length,...m.domains.map(normalizeDomain));
   const colors=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
   DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...colors.slice(0,DOMAINS.length));
-  status.textContent='真實職域資料：2025年 '+fmt(tally[2025])+' 筆、2026年 '+fmt(tally[2026])+' 筆（AQ=1）';
-  status.title='來源 D:G 組織、C 工作月、K/L/N 業績、J 後四碼；按月統計。';
+  let siteWarning='';
+  try{await loadWorksiteData()}catch(e){siteWarning='；職域名冊讀取失敗：'+String(e.message||e);console.error(e)}
+  status.textContent='真實職域業績：2025年 '+fmt(tally[2025])+' 筆、2026年 '+fmt(tally[2026])+' 筆（AQ=1）'+
+   (worksiteReady?'；職域數 '+fmt(worksiteSource.sites)+' 個（B欄去重）':siteWarning);
+  status.title='業績：D:G 組織、C 工作月、K/L/N 業績；職域數：所有職域資料.xlsx A類別、B代碼、I/J/K/R組織。不含時間切換的職域數為名冊現況。';
   render();
  }catch(e){loadingIssue=String(e.message||e);status.textContent='真實資料讀取失敗：'+loadingIssue;render()}
 }
@@ -299,6 +336,11 @@ function sum(items,yearOffset=0){
  const years=[];for(let year=Number(a.slice(0,4));year<=Number(b.slice(0,4));year++)years.push(String(year));
  if(!actualReady||years.some(year=>!actualManifest.audit[year]))return result;
  result.fyc=0;result.fyn=0;result.premium=0;
+ if(worksiteReady){
+  const distinct=new Set();
+  for(const item of items)if(item.siteIds)for(const siteId of item.siteIds)distinct.add(siteId);
+  result.worksites=distinct.size;
+ }
  const people=new Map();
  forEachActualRow(items,a,b,(item,row)=>{
   const id=item.path.join('|');
@@ -508,11 +550,12 @@ function renderDashboard(items,showYoY){
     const dates=document.createElement('span');dates.className='ring-period';
     dates.textContent=period.offset===0?start+' ～ '+end:shiftYear(start,-1)+' ～ '+shiftYear(end,-1);
     top.append(h,whole,subtotal,dates);card.append(top);
-    const cx=270,cy=213,outer=112,inner=70,tau=2*Math.PI;
-    const svg=node('svg',{viewBox:'0 0 540 415',class:'pie-svg ring-svg',role:'img',
-     'aria-label':period.label+field.name+'職域合計'+fmt(workplace)+'，佔整體'+(ratio===null?'無資料':fmtFixed(ratio,1)+'%')+
-      '，分類：'+portions.map(x=>x.label+fmt(x.value||0)).join('；')});
-    svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:'#e9eff4','stroke-width':outer-inner}));
+    // Keep labels out of the pie itself: each slice gets a fixed, readable legend row.
+    const cx=180,cy=145,outer=101,inner=62,tau=2*Math.PI;
+    const svg=node('svg',{viewBox:'0 0 360 290',class:'pie-svg ring-svg',role:'img',
+     'aria-label':period.label+field.name+'：職域合計'+fmt(workplace)+'，佔整體'+
+     (ratio===null?'無資料':fmtFixed(ratio,1)+'%')});
+    svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:'#e8edf2','stroke-width':outer-inner}));
     const ringPoint=(r,a)=>xy(cx,cy,r,a);
     const arc=(a,b)=>{
      const p=ringPoint(outer,a),q=ringPoint(outer,b);
@@ -521,53 +564,35 @@ function renderDashboard(items,showYoY){
      return 'M '+p.x+' '+p.y+' A '+outer+' '+outer+' 0 '+large+' 1 '+q.x+' '+q.y+
       ' L '+v.x+' '+v.y+' A '+inner+' '+inner+' 0 '+large+' 0 '+w.x+' '+w.y+' Z';
     };
-    const callouts=[];
     let angle=-Math.PI/2;
-    for(const item of positive){
-     const share=ringTotal?item.value/ringTotal:0,sweep=tau*share;
+    for(const part of positive){
+     const share=ringTotal?part.value/ringTotal:0,sweep=tau*share;
      if(share>=0.999999){
-      svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:item.color,'stroke-width':outer-inner}));
+      svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:part.color,'stroke-width':outer-inner}));
      }else if(sweep>0){
-      svg.append(node('path',{d:arc(angle,angle+sweep),fill:item.color,stroke:'#fff','stroke-width':1.25}));
+      svg.append(node('path',{d:arc(angle,angle+sweep),fill:part.color,stroke:'#fff','stroke-width':1.25}));
      }
-     const mid=angle+sweep/2;
-     callouts.push({...item,share,mid,side:Math.cos(mid)<0?'left':'right',
-      desiredY:cy+Math.sin(mid)*(outer+20)});
      angle+=sweep;
     }
-    svg.append(node('text',{x:cx,y:cy-20,'text-anchor':'middle','font-size':14,'font-weight':750,fill:'#69849c'},'佔整體'+field.name));
-    const number=node('text',{x:cx,y:cy+28,'text-anchor':'middle','font-size':51,'font-weight':850,fill:'#4e8fdb'});
+    svg.append(node('text',{x:cx,y:cy-17,'text-anchor':'middle','font-size':14,'font-weight':700,fill:'#69849c'},'職域佔整體'));
+    const number=node('text',{x:cx,y:cy+29,'text-anchor':'middle','font-size':47,'font-weight':850,fill:'#4e8fdb'});
     number.append(node('tspan',{},ratio===null?'—':fmtFixed(ratio,1)));
-    if(ratio!==null)number.append(node('tspan',{'font-size':25},'%'));
+    if(ratio!==null)number.append(node('tspan',{'font-size':23},'%'));
     svg.append(number);
-    // Dedicated left/right label lanes; labels are ordered by arc midpoint and
-    // spaced at least 47 SVG units apart. No connector lines or overlapping text.
-    for(const side of ['left','right']){
-     const group=callouts.filter(p=>p.side===side).sort((a,b)=>a.desiredY-b.desiredY);
-     const n=group.length;if(!n)continue;
-     const gap=47,minY=39,maxY=360,span=(n-1)*gap;
-     const ideal=group.reduce((acc,p,i)=>acc+p.desiredY-i*gap,0)/n;
-     const base=Math.max(minY,Math.min(maxY-span,ideal));
-     for(let i=0;i<n;i++){
-      const low=i?group[i-1].y+gap:minY,high=maxY-(n-1-i)*gap;
-      group[i].y=Math.min(high,Math.max(low,Math.max(base+i*gap,group[i].desiredY)));
-     }
-     for(const item of group){
-      const left=side==='left',x=left?150:390;
-      const t=node('text',{x,y:item.y-9,'text-anchor':left?'end':'start',
-       'font-size':14,'font-weight':800,fill:'#30475f'});
-      t.append(node('tspan',{x},item.label));
-      t.append(node('tspan',{x,dy:18,'font-size':12.6,'font-weight':650,fill:'#55718a'},
-       compact(item.value)+' · '+fmtFixed(known&&totalValue?item.value/totalValue*100:item.share*100,1)+'%'));
-      svg.append(t);
-      svg.append(node('circle',{cx:left?157:383,cy:item.y-13,r:4.5,fill:item.color}));
-     }
+    card.append(svg);
+    const legend=document.createElement('div');legend.className='ring-legend';
+    for(const part of portions){
+     const row=document.createElement('div');row.className='ring-legend-row';
+     const swatch=document.createElement('span');swatch.className='ring-legend-swatch';swatch.style.backgroundColor=part.color;
+     const label=document.createElement('span');label.className='ring-legend-name';label.textContent=part.label;label.title=part.label;
+     const amount=document.createElement('span');amount.className='ring-legend-amount';
+     amount.textContent=compact(part.value);amount.title=fmt(part.value)+'（原始單位）';
+     const share=document.createElement('span');share.className='ring-legend-share';
+     share.textContent=known&&totalValue?fmtFixed(part.value/totalValue*100,1)+'%':'—';
+     row.append(swatch,label,amount,share);legend.append(row);
     }
-    if(!ringTotal)svg.append(node('text',{x:cx,y:363,'text-anchor':'middle','font-size':13,fill:'#8696a5'},'此期間沒有業績資料'));
-    const corrections=portions.filter(p=>Number(p.value)<0);
-    if(corrections.length)svg.append(node('text',{x:cx,y:401,'text-anchor':'middle','font-size':11,fill:'#946f78'},
-     '負向沖銷：'+corrections.map(p=>p.label+' '+compact(p.value)).join('、')));
-    card.append(svg);root.append(card);
+    card.append(legend);
+    root.append(card);
    }
   }
   if(showYoY){
@@ -616,7 +641,7 @@ function render(){
  byId('summaryDashboard').hidden=false;
  byId('yoyWrap').hidden=level!==0;
  byId('dashboardTitle').textContent=LEVELS[level]+'業績組成';
- byId('dashboardDescription').textContent='職域業績採 Excel 真實值；整體 FYC／FYN／保費暫按職域的 5 倍模擬，佔比約 20%。';
+ byId('dashboardDescription').textContent='職域業績採兩年度真實資料；職域數依名冊 B 欄去重、A 欄轉中文並對應 I/J/K/R 組織（不隨業績日期改變）；整體 FYC／FYN／保費為職域的 5 倍示範值。';
  renderDashboard(matching,level===0);
  byId('period').textContent=start+' ～ '+end;byId('leveltitle').textContent=LEVELS[level];
  const crumb=byId('crumb');crumb.replaceChildren();
