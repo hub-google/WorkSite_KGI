@@ -638,16 +638,20 @@ function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
 const DOMAIN_COLORS=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
 const TARGETS=[['闔家安康','6C'],['醫護公會',null],['台積電','72C'],['駐廠職域',null]];
-function targetHelp(key='active'){
+function targetHelp(key='active',displayLabel=null){
  const isAgent=key==='achievedOperators';
- const label=isAgent?'達標經營人員數':'達標職域數';
+ const label=displayLabel||(isAgent?'達標經營人員數':'達標職域數');
  const wrap=document.createElement('span');wrap.className='target-help';
  const trigger=document.createElement('button');trigger.type='button';trigger.className='target-trigger';trigger.textContent=label;
  trigger.setAttribute('aria-label','查看'+label+'計算說明');trigger.setAttribute('aria-expanded','false');
  const tooltip=document.createElement('span');tooltip.className='target-tooltip';tooltip.setAttribute('role','tooltip');
  const title=document.createElement('strong');title.textContent=label+'計算說明';tooltip.append(title);
  if(isAgent){
-  const note=document.createElement('small');note.textContent='每位經營人員的固定隨機達標機率介於 50%～90%；同一人跨職域、組織層級只認列一次，確保小計與總計一致。非實際考核結果，樣本少時比例可能偏離此區間。';tooltip.append(note);
+  const note=document.createElement('small');
+  note.textContent=displayLabel==='是否達標'
+   ?'O＝達標；X＝未達標。此狀態依單一業務員的固定隨機結果呈現，非實際考核結果。'
+   :'每位經營人員的固定隨機達標機率介於 50%～90%；同一人跨職域、組織層級只認列一次，確保小計與總計一致。非實際考核結果，樣本少時比例可能偏離此區間。';
+  tooltip.append(note);
  }else{
   for(const [name,target] of TARGETS){const line=document.createElement('span');line.textContent=name+'：'+(target||'尚未設定');tooltip.append(line)}
   const note=document.createElement('small');note.textContent='依有效職域數，以各類別固定隨機 30%～90% 比率估算；同一 B 代碼只算一次。';tooltip.append(note);
@@ -827,6 +831,14 @@ function render(){
  byId('period').textContent=start+' ～ '+end;byId('leveltitle').textContent=LEVELS[level];
  const crumb=byId('crumb');crumb.replaceChildren();
  LEVELS.slice(0,level+1).forEach((name,i)=>{if(i){const sep=document.createElement('span');sep.textContent='›';crumb.append(sep)}const b=document.createElement('button');b.textContent=i===0?'通路總計':path[i-1];b.disabled=i===level;b.onclick=()=>{path=path.slice(0,i);render()};crumb.append(b)});
+ // Salesperson level is a single-person boolean, not an aggregate headcount.
+ // The underlying achievedOperators metric and all higher levels stay numeric.
+ const displayMetricLabel=(key,label)=>level===3&&key==='achievedOperators'?'是否達標':label;
+ for(const option of document.querySelectorAll('#metricChecks label,#dashboardMetricChecks label')){
+  if(option.dataset.metricKey!=='achievedOperators')continue;
+  const caption=[...option.childNodes].find(node=>node.nodeType===3);
+  if(caption)caption.textContent=displayMetricLabel('achievedOperators','達標經營人員數');
+ }
  const orgCols=TABLE_METRICS.filter(([key])=>ORGANIZATION_METRICS.has(key)&&VISIBLE.has(key));
  const cols=TABLE_METRICS.filter(([key])=>!ORGANIZATION_METRICS.has(key)&&VISIBLE.has(key));
  const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');
@@ -837,6 +849,7 @@ function render(){
  nameSort.onclick=()=>{sortMetric=null;sortDirection='name';render()};
  first.replaceChildren(nameSort);first.append(filterHost);tr.append(first);
  function addMetricHeader(key,label){
+  label=displayMetricLabel(key,label);
   const h=document.createElement('th'),btn=document.createElement('button'),symbol=document.createElement('span');
   btn.type='button';btn.className='metric-sort';btn.onclick=()=>toggleSort(key);
   btn.setAttribute('aria-sort',sortMetric===key?(sortDirection==='desc'?'descending':'ascending'):'none');
@@ -844,7 +857,7 @@ function render(){
   btn.append(document.createTextNode(label));symbol.className='sort-symbol';symbol.textContent=sortMetric===key?(sortDirection==='desc'?'▼':'▲'):'⇅';btn.append(symbol);
   if(label==='實動率')btn.title+='。定義：FYN > 0 的不重複業務員人數 ÷ 全部不重複業務員人數 × 100%';
   const targetMetric=key==='active'||key==='achievedOperators';
-  if(targetMetric)h.append(targetHelp(key));else h.append(btn);
+  if(targetMetric)h.append(targetHelp(key,label));else h.append(btn);
   if(targetMetric){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依'+label+'排序';h.append(sort)}
   tr.append(h);
  }
@@ -935,6 +948,14 @@ function render(){
      const scope=(row.name==='總計'?location:location+'／'+row.name)+(row.domain==='總計'?'':'／'+row.domain);
      button.onclick=()=>openMetricDetail(key,label,row.items,scope);
      cell.append(button);
+    }else if(level===3&&key==='achievedOperators'){
+     // For a single salesperson only: 1 → O, 0 → X.
+     // Grand category/channel totals contain multiple people; they are not
+     // individual pass/fail statuses and must never be shown as O/X.
+     cell.textContent=(row.grandGroup||row.grandTotal||values[key]===null)
+      ?'—':values[key]===1?'O':values[key]===0?'X':'—';
+     cell.title=cell.textContent==='O'?'達標':cell.textContent==='X'?'未達標':'不適用';
+     cell.setAttribute('aria-label',cell.title);
     }else cell.textContent=values[key]===null?'—':(WORKPLACE_SHARES[key]
      ?fmtFixed(values[key],1)+'%'
      :key==='activityRate'?fmtFixed(values[key],1)+'%':fmt(values[key]));
@@ -944,7 +965,7 @@ function render(){
  }
  tbody.append(frag);
 }
-for(const [key,label] of TABLE_METRICS){const wrap=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=VISIBLE.has(key);input.onchange=()=>{if(input.checked)VISIBLE.add(key);else VISIBLE.delete(key);for(const label of document.querySelectorAll('#dashboardMetricChecks label')){if(label.textContent===METRICS.find(m=>m[0]===key)[1])label.querySelector('input').checked=input.checked}render()};wrap.append(input,document.createTextNode(label));byId('metricChecks').append(wrap);const mirror=wrap.cloneNode(true);const mirrored=mirror.querySelector('input');mirrored.onchange=()=>{input.checked=mirrored.checked;input.onchange()};byId('dashboardMetricChecks').append(mirror)}
+for(const [key,label] of TABLE_METRICS){const wrap=document.createElement('label');wrap.dataset.metricKey=key;const input=document.createElement('input');input.type='checkbox';input.checked=VISIBLE.has(key);input.onchange=()=>{if(input.checked)VISIBLE.add(key);else VISIBLE.delete(key);for(const label of document.querySelectorAll('#dashboardMetricChecks label')){if(label.dataset.metricKey===key)label.querySelector('input').checked=input.checked}render()};wrap.append(input,document.createTextNode(label));byId('metricChecks').append(wrap);const mirror=wrap.cloneNode(true);const mirrored=mirror.querySelector('input');mirrored.onchange=()=>{input.checked=mirrored.checked;input.onchange()};byId('dashboardMetricChecks').append(mirror)}
 byId('dashboardMetricBtn').onclick=()=>{const menu=byId('dashboardMetricMenu');menu.hidden=!menu.hidden;byId('dashboardMetricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('metricMenu').hidden=true;byId('metricBtn').setAttribute('aria-expanded','false')};
 byId('metricBtn').onclick=()=>{const menu=byId('metricMenu');menu.hidden=!menu.hidden;byId('metricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('dashboardMetricMenu').hidden=true;byId('dashboardMetricBtn').setAttribute('aria-expanded','false')};
 document.addEventListener('click',e=>{if(!e.target.closest('.metricbox')){for(const [menu,btn] of [['metricMenu','metricBtn'],['dashboardMetricMenu','dashboardMetricBtn']]){byId(menu).hidden=true;byId(btn).setAttribute('aria-expanded','false')}}});
