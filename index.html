@@ -163,7 +163,9 @@ const ORGANIZATIONS=[]; // Loaded from D:G via data/manifest.json
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠職域'];
 const normalizeDomain=name=>name==='駐廠'?'駐廠職域':name;
 const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
-const WORKPLACE_SHARES={fycShare:['fyc','totalFyc'],fynShare:['fyn','totalFyn'],premiumShare:['premium','totalPremium']};
+// Table contribution shares are workplace-category KPI / current organization KPI total.
+// The simulated company-wide KPIs are deliberately not the denominators.
+const WORKPLACE_SHARES={fycShare:'fyc',fynShare:'fyn',premiumShare:'premium'};
 const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
 const TABLE_METRICS=METRICS.filter(([key])=>!['totalFyc','totalFyn','totalPremium'].includes(key));
 
@@ -372,13 +374,8 @@ function sum(items,yearOffset=0){
  // All three simulated whole-channel values are explicitly not real data.
  result.totalFyn=Math.round(result.fyn*5*10000)/10000;
  result.totalPremium=Math.round(result.premium*5*10000)/10000;
- for(const [part,whole,share] of [
-  ['fyc','totalFyc','fycShare'],
-  ['fyn','totalFyn','fynShare'],
-  ['premium','totalPremium','premiumShare']
- ]){
-  result[share]=result[whole]!==0?Math.round(result[part]/result[whole]*1000)/10:0;
- }
+ // Category shares need a parent-organization denominator. They are computed
+ // when table rows are rendered; leave aggregate sum() shares undefined here.
  // Other missing KPIs remain null until matching sources become available.
  return result;
 }
@@ -717,11 +714,14 @@ function render(){
  const shownDomains=DOMAINS.filter(d=>!selectedDomains||selectedDomains.has(d));
  const groupSize=shownDomains.length+1;
  const rows=[];
+ const orgTotals=new Map();
  for(const name of names){
    const group=matching.filter(e=>childName(e)===name);
+   orgTotals.set(name,sum(group));
    for(const domain of shownDomains)rows.push({name,domain,items:group.filter(e=>e.domain===domain)});
    rows.push({name,domain:'總計',items:group,subtotal:true});
  }
+ const grandTotals=sum(matching);
  for(const domain of shownDomains)rows.push({name:'總計',domain,items:matching.filter(e=>e.domain===domain),grandGroup:true});
  rows.push({name:'總計',domain:'總計',items:matching,grandTotal:true});
  const frag=document.createDocumentFragment();
@@ -746,6 +746,16 @@ function render(){
    }
    const d=document.createElement('td');d.textContent=row.domain;d.style.textAlign='left';r.append(d);
    const values=sum(row.items);
+   // Every displayed percentage is local to the immediate organization:
+   // domain row / its organization's subtotal; grand category / grand total.
+   // A subtotal compared with itself is 100% when its KPI is nonzero.
+   // Filters and organization drill-down naturally use their current scope.
+   const parentTotals=(row.grandGroup||row.grandTotal)?grandTotals:orgTotals.get(row.name);
+   for(const [shareKey,partKey] of Object.entries(WORKPLACE_SHARES)){
+    const parentValue=parentTotals?.[partKey],rowValue=values[partKey];
+    values[shareKey]=Number.isFinite(rowValue)&&Number.isFinite(parentValue)&&parentValue!==0
+     ?100*rowValue/parentValue:null;
+   }
    for(const [key,label] of cols){
     const cell=document.createElement('td');
     if(DETAIL_METRICS.has(key)){
@@ -755,7 +765,9 @@ function render(){
      const scope=(row.name==='總計'?location:location+'／'+row.name)+(row.domain==='總計'?'':'／'+row.domain);
      button.onclick=()=>openMetricDetail(key,label,row.items,scope);
      cell.append(button);
-    }else cell.textContent=values[key]===null?'—':((key==='activityRate'||WORKPLACE_SHARES[key])?fmtFixed(values[key],1)+'%':fmt(values[key]));
+    }else cell.textContent=values[key]===null?'—':(WORKPLACE_SHARES[key]
+     ?fmtFixed(values[key],2)+'%'
+     :key==='activityRate'?fmtFixed(values[key],1)+'%':fmt(values[key]));
     r.append(cell)
    }
    frag.append(r)
