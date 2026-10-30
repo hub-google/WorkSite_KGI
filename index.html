@@ -185,29 +185,6 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 #thead th:nth-child(2),#thead th:nth-child(3){min-width:94px}
 
 
-/* Continuous full-width subtotal and grand-total boundaries. */
-#tbody td.summary-org-cell,
-#tbody td.grand-detail-org{
- position:sticky;left:0;z-index:2;text-align:center;font-weight:800;
- border-right:1px solid #dce8f0;box-shadow:2px 0 3px #13273f08;
-}
-#tbody td.grand-detail-org,#tbody td.grand-detail-metric{
- background:#fffdf0;border-right:1px solid #e8e7dc;
-}
-#tbody tr.subtotal td{
- background:#e9f4fa;
- border-top:1px solid #d3e5ef;
- border-bottom:2px solid #c9dfea;
-}
-#tbody tr.total td{
- background:#fff9d4;
- border-top:2px solid #e5ce7b;
- border-bottom:2px solid #e5ce7b;
-}
-#tbody tr.total td.grand-org{background:#fff9d4!important}
-#tbody tr.total td.grand-org-metric{background:#fff9d4}
-#tbody tr.subtotal td.summary-org-cell,
-#tbody tr.subtotal td.summary-org-metric{background:#e9f4fa}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -943,56 +920,40 @@ function render(){
    else if(row.grandTotal)r.className='total';
    else if(row.grandGroup)r.className='grand-group';
    else if(i%groupSize===0&&i>0)r.className='groupstart';
-   // Keep organization-level cells merged only across the workplace detail rows.
-   // Subtotals and the final grand total must be independent full-width rows.
-   const detailCount=shownDomains.length;
-   const isOrganizationDetailStart=detailCount>0&&!row.subtotal&&!row.grandGroup&&!row.grandTotal&&i%groupSize===0;
-   const isGrandDetailStart=detailCount>0&&row.grandGroup&&row.domain===shownDomains[0];
-   const isSummaryRow=Boolean(row.subtotal||row.grandTotal);
-   if(isOrganizationDetailStart||isGrandDetailStart||isSummaryRow){
-    const n=document.createElement('td');
-    if(row.grandTotal){
-     n.className='grand-org';n.textContent='總計';
-    }else if(row.subtotal){
-     n.className='summary-org-cell';
-     n.textContent=detailCount? '小計':row.name+' 小計';
-    }else if(isGrandDetailStart){
-     n.className='grand-detail-org';n.textContent='職域明細';n.rowSpan=detailCount;
+   // Organization name and KPIs span the workplace rows AND the final "總計" row.
+   // Do not insert a separate "小計" cell into the first three columns.
+   const grandStart=(row.grandGroup&&row.domain===shownDomains[0])||(row.grandTotal&&shownDomains.length===0);
+   const organizationStart=!row.grandGroup&&!row.grandTotal&&i%groupSize===0;
+   if(grandStart){
+    const n=document.createElement('td');n.className='grand-org';n.rowSpan=groupSize;n.textContent='總計';r.append(n);
+   }else if(organizationStart){
+    const n=document.createElement('td');n.className='org-cell';n.rowSpan=groupSize;
+    if(level<3){
+     const button=document.createElement('button');button.className='orglink';button.textContent=row.name+' ↗';
+     button.title='查看'+row.name+'的下一層';
+     button.onclick=()=>{path.push(row.name);render();window.scrollTo({top:0,behavior:'smooth'})};n.append(button);
     }else{
-     n.className='org-cell';n.rowSpan=detailCount;
-     if(level<3){
-      const button=document.createElement('button');button.className='orglink';button.textContent=row.name+' ↗';
-      button.title='查看'+row.name+'的下一層';
-      button.onclick=()=>{path.push(row.name);render();window.scrollTo({top:0,behavior:'smooth'})};n.append(button);
-     }else{
-      const title=document.createElement('strong');title.textContent=row.name;n.append(title);
-     }
-     if(level===3){
-      const sub=document.createElement('span');sub.className='subline';sub.textContent='示範業務員';n.append(sub);
-     }
+     const title=document.createElement('strong');title.textContent=row.name;n.append(title);
+    }
+    if(level===3){
+     const sub=document.createElement('span');sub.className='subline';sub.textContent='示範業務員';n.append(sub);
     }
     r.append(n);
-    let metrics=null;
-    if(row.grandTotal){
-     metrics=names.reduce((acc,name)=>{
+   }
+   if(grandStart||organizationStart){
+    const metrics=grandStart
+     ?names.reduce((acc,name)=>{
       const next=organizationMetrics([...path,name]);
       for(const key of ORGANIZATION_METRICS)
        acc[key]=acc[key]===null||next[key]===null?null:acc[key]+next[key];
       return acc;
-     },{teamCount:0,newcomers:0});
-    }else if(isOrganizationDetailStart){
-     metrics=organizationMetrics([...path,row.name]);
-    }
+     },{teamCount:0,newcomers:0})
+     :organizationMetrics([...path,row.name]);
     for(const [key] of orgCols){
-     const cell=document.createElement('td');
-     cell.className='org-metric-cell';
-     if(row.grandTotal)cell.classList.add('grand-org-metric');
-     else if(row.subtotal)cell.classList.add('summary-org-metric');
-     else if(isGrandDetailStart)cell.classList.add('grand-detail-metric');
-     else cell.rowSpan=detailCount;
-     // Group totals appear once on the detail group; channel totals appear on
-     // the final total row. Summary separator cells are intentionally blank.
-     if(metrics)cell.textContent=metrics[key]==null?'—':fmt(metrics[key]);
+     const cell=document.createElement('td');cell.className='org-metric-cell';
+     if(grandStart)cell.classList.add('grand-org-metric');
+     cell.rowSpan=groupSize;
+     cell.textContent=metrics[key]===null?'—':fmt(metrics[key]);
      r.append(cell);
     }
    }
