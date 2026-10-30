@@ -213,7 +213,8 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 <script>
 const ORGANIZATIONS=[]; // Loaded from D:G via data/manifest.json
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠職域'];
-const normalizeDomain=name=>name==='駐廠'?'駐廠職域':name;
+// 新安東京併入駐廠職域：只合併展示分類，原始業績列保持不變。
+const normalizeDomain=name=>name==='駐廠'||name==='新安東京'?'駐廠職域':name;
 const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['achievedOperators','達標經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
 // Table contribution shares are workplace-category KPI / current organization KPI total.
 // The simulated company-wide KPIs are deliberately not the denominators.
@@ -391,7 +392,7 @@ async function loadWorksiteData(){
   allDomains.add(domain);
  }
  DOMAINS.splice(0,DOMAINS.length,...allDomains);
- DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...['#3273c4','#ed8b2c','#169c90','#9762ba','#ef6c79','#b7a04e','#8396aa'].slice(0,DOMAINS.length));
+ syncDomainColors();
  worksiteSource={...w,sites:activeSiteCodes.size};worksiteReady=true;
 }
 async function loadActualData(){
@@ -420,9 +421,9 @@ async function loadActualData(){
   }
   for(const year of ['2025','2026'])if(tally[year]!==Number(m.audit[year].rows))throw new Error(year+' 來源總列數錯誤');
   actualManifest=m;actualReady=true;
-  DOMAINS.splice(0,DOMAINS.length,...m.domains.map(normalizeDomain));
-  const colors=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
-  DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...colors.slice(0,DOMAINS.length));
+  // 複數原始類別可能對應同一職域；清單去重，避免圖表重複加總。
+  DOMAINS.splice(0,DOMAINS.length,...new Set(m.domains.map(normalizeDomain)));
+  syncDomainColors();
   let siteWarning='';
   try{await loadWorksiteData()}catch(e){siteWarning='；職域名冊讀取失敗：'+String(e.message||e);console.error(e)}
   // Data source loaded; omit raw record counts and technical metadata from UI.
@@ -646,7 +647,12 @@ function sortedOrganizations(names,matching){
 function childName(e){return e.path[path.length]}
 function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
-const DOMAIN_COLORS=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
+const DOMAIN_COLOR_BY_NAME={'闔家安康':'#ed8b2c','台積電':'#ef6c79','醫護公會':'#119b87','駐廠職域':'#2463c5'};
+const DOMAIN_COLORS=[];
+function syncDomainColors(){
+ DOMAIN_COLORS.splice(0,DOMAIN_COLORS.length,...DOMAINS.map(name=>DOMAIN_COLOR_BY_NAME[name]||'#8396aa'));
+}
+syncDomainColors();
 const TARGETS=[['闔家安康','6C'],['醫護公會',null],['台積電','72C'],['駐廠職域',null]];
 function targetHelp(key='active',displayLabel=null){
  const isAgent=key==='achievedOperators';
@@ -677,6 +683,9 @@ function renderDashboard(items,showYoY){
   domain,color:DOMAIN_COLORS[i],items:items.filter(x=>x.domain===domain)
  }));
  const total=sum(items),totalPrevious=sum(items,-1);
+ // 兩張年度圓環圖及 FYN／保費切換共用今年 FYC 降冪排序。
+ const currentFycByDomain=new Map(domainTotals.map(x=>[x.domain,sum(x.items).fyc]));
+ const currentFycOrder=DOMAINS.slice().sort((a,b)=>(Number(currentFycByDomain.get(b))||0)-(Number(currentFycByDomain.get(a))||0)||a.localeCompare(b,'zh-TW'));
  const ns='http://www.w3.org/2000/svg';
  const node=(tag,attrs={},content)=>{
   const el=document.createElementNS(ns,tag);
@@ -703,9 +712,10 @@ function renderDashboard(items,showYoY){
     const components=domainTotals.map(x=>({label:x.domain,color:x.color,value:sum(x.items,period.offset)[field.part]}));
     const workplace=components.reduce((a,x)=>a+(Number(x.value)||0),0);
     const totalValue=periodTotal[field.whole],known=Number.isFinite(totalValue);
-    // Sort real worksite categories descending. Keep the residual 'Other' LAST
-    // regardless of its size (applies to current/prior FYC, FYN, and premium).
-    const ranked=components.slice().sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0)||a.label.localeCompare(b.label,'zh-TW'));
+    // 始終依今年 FYC 排序；去年不可用自己的金額重新排序。
+    // 「非職域／其他」仍固定最後，避免干擾職域對照。
+    const componentsByLabel=new Map(components.map(part=>[part.label,part]));
+    const ranked=currentFycOrder.map(label=>componentsByLabel.get(label));
     const portions=known?[...ranked,{label:field.name==='FYC'?'非職域FYC':'其他'+field.name,isResidual:true,color:'#637588',value:totalValue-workplace}]:ranked;
     const positive=portions.filter(x=>Number(x.value)>0);
     const ringTotal=positive.reduce((a,x)=>a+x.value,0);
