@@ -274,8 +274,13 @@ function renderMetricDetail(){
 const VISIBLE=new Set(['worksites','operators','achievedOperators','activityRate','fyc','fyn','premium']);
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
 const byId=id=>document.getElementById(id);
-const today=new Date(), yyyy=today.getFullYear();
-byId('start').value=yyyy+'01';byId('end').value=yyyy+'12';
+// Use the current calendar month in Taiwan, never December by default.
+// The current and prior-year comparison must stop at the same month.
+const taipeiParts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+const taipeiYear=taipeiParts.find(part=>part.type==='year').value;
+const taipeiMonth=taipeiParts.find(part=>part.type==='month').value;
+const yyyy=Number(taipeiYear),currentMonth=taipeiYear+taipeiMonth;
+byId('start').value=taipeiYear+'01';byId('end').value=currentMonth;
 let path=[], start=byId('start').value,end=byId('end').value;
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function count(key,min,max){return min+(hash(key)%(max-min+1))}
@@ -843,7 +848,7 @@ for(const [key,label] of TABLE_METRICS){const wrap=document.createElement('label
 byId('dashboardMetricBtn').onclick=()=>{const menu=byId('dashboardMetricMenu');menu.hidden=!menu.hidden;byId('dashboardMetricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('metricMenu').hidden=true;byId('metricBtn').setAttribute('aria-expanded','false')};
 byId('metricBtn').onclick=()=>{const menu=byId('metricMenu');menu.hidden=!menu.hidden;byId('metricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('dashboardMetricMenu').hidden=true;byId('dashboardMetricBtn').setAttribute('aria-expanded','false')};
 document.addEventListener('click',e=>{if(!e.target.closest('.metricbox')){for(const [menu,btn] of [['metricMenu','metricBtn'],['dashboardMetricMenu','dashboardMetricBtn']]){byId(menu).hidden=true;byId(btn).setAttribute('aria-expanded','false')}}});
-byId('apply').onclick=()=>{const a=byId('start').value.trim(),b=byId('end').value.trim();const valid=/^\d{4}(0[1-9]|1[0-2])$/;if(!valid.test(a)||!valid.test(b)||a>b){alert('請輸入正確的月份區間（YYYYMM，例如 202601～202612）');return}start=a;end=b;render()};
+byId('apply').onclick=()=>{const a=byId('start').value.trim(),b=byId('end').value.trim();const valid=/^\d{4}(0[1-9]|1[0-2])$/;if(!valid.test(a)||!valid.test(b)||a>b){alert('請輸入正確的月份區間（YYYYMM，例如 202601～'+currentMonth+'）');return}if(b>currentMonth){alert('結束月份不可晚於台灣目前月份 '+currentMonth);return}start=a;end=b;render()};
 byId('detailClose').onclick=()=>byId('metricDetailDialog').close();
 byId('policyDetailBtn').onclick=()=>openPolicyDetails(filteredItems().items);
 byId('policyClose').onclick=()=>byId('policyDetailDialog').close();
