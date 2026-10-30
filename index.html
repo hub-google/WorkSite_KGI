@@ -696,7 +696,7 @@ function renderDashboard(items,showYoY){
     // Sort real worksite categories descending. Keep the residual 'Other' LAST
     // regardless of its size (applies to current/prior FYC, FYN, and premium).
     const ranked=components.slice().sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0)||a.label.localeCompare(b.label,'zh-TW'));
-    const portions=known?[...ranked,{label:'其他'+field.name,color:'#637588',value:totalValue-workplace}]:ranked;
+    const portions=known?[...ranked,{label:field.name==='FYC'?'非職域FYC':'其他'+field.name,isResidual:true,color:'#637588',value:totalValue-workplace}]:ranked;
     const positive=portions.filter(x=>Number(x.value)>0);
     const ringTotal=positive.reduce((a,x)=>a+x.value,0);
     const ratio=known&&totalValue!==0?100*workplace/totalValue:null;
@@ -745,8 +745,8 @@ function renderDashboard(items,showYoY){
     svg.append(number);
     // Reserve independent lanes: all ranked worksite labels on the right and
     // the "Other" remainder at lower left, so labels never overlap the donut.
-    const worksiteLabels=portions.filter(p=>!p.label.startsWith('其他'));
-    const otherLabel=portions.find(p=>p.label.startsWith('其他'));
+    const worksiteLabels=portions.filter(p=>!p.isResidual);
+    const otherLabel=portions.find(p=>p.isResidual);
     const labels=worksiteLabels.map((p,i)=>({
       ...p,side:'right',y:worksiteLabels.length<2?205:95+(i*365)/(worksiteLabels.length-1)
     }));
