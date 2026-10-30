@@ -109,6 +109,9 @@
 
 ### 5.3 組數／新人數：只顯示在組織層（不可按職域列拆分）
 
+**已實測可重跑的線上驗收程式**：[tests/organization-person-binary.html](../tests/organization-person-binary.html)（[直接執行線上驗收](https://hub-google.github.io/WorkSite_KGI/tests/organization-person-binary.html)）。使用實際 GitHub Pages 資料和同網域績效頁執行：1,724 位人員去重、每項 0/1、1,560／1,055 根總計、六區合計、**1,871 個組織及人員前綴全數比對**、合併儲存格數值、無一人多次計數。2026-10-30 新版已實際回傳 `PASS（全部通過）`；更換版本或資料時須重跑。
+
+
 固定資料檔：[data/organization-metrics.json](../data/organization-metrics.json)。現行來源 1,728 筆索引、1,724 個完整路徑去重人員、127 個通訊處；由原有每通訊處派 1～2 名示範組長／13% hash 新人基準向外擴充，保留原入選人員；每名單按完整人員路徑去重，每人最多計 1。**數值固定，獨立於職域與績效月份。**
 
 | 區域中心 | 組數 | 新人數 |
