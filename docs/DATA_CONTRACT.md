@@ -104,19 +104,24 @@ data/worksite-sites.txt 為 Base64(GZIP(JSON))，JSON 預期含：v=2、rows=705
 
 ### 4.2 整體通路數據（模擬）
 
-每筆真實職域 FYC 單獨套一個固定倍率：
+三項模擬整體 KPI 均**不是真實通路資料**，由原始真實職域列數值衍生，保留可加總性。不得直接固定乘 5，也不得以每次載入時的隨機數重抽。
 
-    const seed='overall-fyc-v2|'+item.seed+'|'+month+'|'
-              +String(row[9]??'')+'|'+String(row[7]??'');
-    const multiplier=3+(hash(seed)%30001)/10000;
-    result.totalFyc += Math.round((Number(row[2])||0)*multiplier);
+對每筆來源列，取 metric = fyc / fyn / premium，month 為來源工作月 `YYYYMM`：
 
-範圍 3.0000～6.0000；**每筆先 round，然後 sum**，不是「先 sum 再乘」。負值必須遵守 JS Math.round 語義。其餘：
+```js
+const year=month.slice(0,4);
+const annualShare=19+(hash('overall-share-v3|'+metric+'|'+year)%801)/100;
+const monthlyJitter=((hash('overall-jitter-v3|'+metric+'|'+month)%151)-75)/100;
+const multiplier=100/(annualShare+monthlyJitter);
+totalFyc+=Math.round(rawFyc*simulatedOverallMultiplier('fyc',month));
+totalFyn+=rawFyn*simulatedOverallMultiplier('fyn',month);
+totalPremium+=Math.round(rawPremium*simulatedOverallMultiplier('premium',month));
+```
 
-    totalFyn = Math.round(fyn*5*10000)/10000;
-    totalPremium = Math.round(premium*5*10000)/10000;
-
-三項整體指標都是模擬，**不是**完整真實通路資料。
+- 年度基準為 19.00%～27.00%；同年同指標的每月擾動為 ±0.75 個百分點，理論上的單月職域占整體比例在 18.25%～27.75%，符合要求的 18%～28%。
+- 來源列按相同規則計算後才累加，故相同資料列於不同組織層級、職域分類及跨期總計的模擬結果一致；今年與去年同月分別有不同年度基準。
+- 若特定範圍的來源列出現大量負向沖銷，`sum(worksite)/sum(simulatedOverall)` 可能因正負抵銷偏離預期區間；系統仍以真實職域列與可稽核加總優先，禁止事後強行截斷比例而破壞組織對帳。
+- 每次刷新不應改變倍率；模擬整體指標應標示為模擬。
 
 ### 4.3 組數／新人數：獨立的組織資料（必須上下層可加總）
 
@@ -223,7 +228,7 @@ data/worksite-sites.txt 為 Base64(GZIP(JSON))，JSON 預期含：v=2、rows=705
 
 全通路 2026-01～當下台灣月份（來源 FYC 總額）作職域類別排序，並於每個中心、業務區、通訊處、業務員沿用同一順序；2026-10-30 類別為：
 
-    闔家安康 → 台積電 → 醫護公會 → 駐廠職域 → 新安東京。
+    闔家安康 → 台積電 → 醫護公會 → 駐廠職域（已包含新安東京）。
 
 實作使用 forEachActualRow(entries,taipeiYear+'01',currentMonth,callback)，**不可用 yyyy+'-01-01' 舊格式**。同比三卡依「本卡今年該指標」降冪；圓環依該期間該指標降冪，**其他**固定最後。組織中心仍依指定六區域順序。
 
