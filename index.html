@@ -184,6 +184,34 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 }
 #thead th:nth-child(2),#thead th:nth-child(3){min-width:94px}
 
+/* Table grid repair: keep the original merged-column layout (reference image 2).
+   One continuous group separator, no overlapping top/bottom borders. */
+#performance .tablewrap > table{
+ border-collapse:collapse;
+ border-spacing:0;
+}
+#tbody tr.groupstart > td{
+ border-top:0;
+}
+#tbody tr.subtotal > td{
+ border-bottom:2px solid #d9e7ee;
+}
+#tbody td.org-cell,
+#tbody td.org-metric-cell:not(.grand-org-metric){
+ border-bottom:2px solid #d9e7ee;
+}
+#tbody tr.total > td{
+ border-bottom:2px solid #e5ce7b;
+}
+#tbody td.grand-org,
+#tbody td.org-metric-cell.grand-org-metric{
+ border-bottom:2px solid #e5ce7b;
+}
+#tbody tr.grand-group:has(> td.grand-org) > td{
+ border-top:2px solid #e5ce7b;
+}
+
+
 
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
