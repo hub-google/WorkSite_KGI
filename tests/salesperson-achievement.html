@@ -36,6 +36,27 @@
   info('業務員 O/X 映射',rawStatusOkay,'共'+cols.length+'個狀態；'+JSON.stringify(vals.slice(0,36)));
   const success=cols.filter(el=>el.textContent==='O').length,miss=cols.filter(el=>el.textContent==='X').length,skip=cols.filter(el=>el.textContent==='—').length;
   info('個別業務員 O/X 統計',success+miss>0,'O '+success+'／X '+miss+'／— '+skip);
+  // Verify BOTH O and X are observed in actual DOM, not only the X path.
+  // If this office contains only X, navigate by real breadcrumbs and click
+  // other offices under the same business district until a real O is seen.
+  let observedO=success>0,observedX=miss>0,officesChecked=1;
+  if(!observedO||!observedX){
+   for(let nextOffice=1;nextOffice<12;nextOffice++){
+    const backBtns=[...doc().querySelectorAll('#crumb button')];
+    backBtns[backBtns.length-2].click();
+    const officeLinks=[...doc().querySelectorAll('#tbody .orglink')];
+    if(nextOffice>=officeLinks.length){officeLinks[0]?.click();break}
+    officeLinks[nextOffice].click();
+    await until(()=>headings()[0].includes('業務員'));
+    const states=[...doc().querySelectorAll('#tbody td[aria-label="達標"],#tbody td[aria-label="未達標"]')];
+    observedO ||= states.some(e=>e.textContent.trim()==='O');
+    observedX ||= states.some(e=>e.textContent.trim()==='X');
+    officesChecked++;
+    if(observedO&&observedX)break;
+   }
+  }
+  info('實際涵蓋 1→O 與 0→X 兩條路徑',observedO&&observedX,
+   '已查'+officesChecked+'間通訊處；O='+observedO+'，X='+observedX);
   const totalRows=[...doc().querySelectorAll('#tbody tr.grand-group,#tbody tr.total')];
   const totalStatus=totalRows.map(tr=>tr.querySelector('td[aria-label="不適用"]')?.textContent?.trim());
   info('非個人總計不用 O/X',totalRows.length>0&&totalStatus.every(x=>x==='—'),'總計/類別總計共'+totalRows.length+'列；'+totalStatus.join(','));
