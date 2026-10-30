@@ -165,6 +165,25 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 #thead .header-filter-trigger.filtered{color:#fff;background:#2c6b91}
 #thead .target-tooltip{letter-spacing:normal}
 
+/* Group-level fields are row-spanned alongside the organization name, not by domain. */
+#tbody td.org-metric-cell{
+ vertical-align:middle;
+ text-align:center;
+ font-variant-numeric:tabular-nums;
+ font-weight:750;
+ color:#244760;
+ background:#f4f8fb;
+ border-right:1px solid #dce8f0;
+ border-bottom:2px solid #d9e7ee;
+ min-width:84px;
+}
+#tbody td.org-metric-cell.grand-org-metric{
+ background:#fff5cc;
+ color:#34465a;
+ border-bottom:2px solid #e5ce7b;
+}
+#thead th:nth-child(2),#thead th:nth-child(3){min-width:94px}
+
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -200,6 +219,7 @@ const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','�
 // The simulated company-wide KPIs are deliberately not the denominators.
 const WORKPLACE_SHARES={fycShare:'fyc',fynShare:'fyn',premiumShare:'premium'};
 const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
+const ORGANIZATION_METRICS=new Set(['teamCount','newcomers']);
 const TABLE_METRICS=METRICS.filter(([key])=>!['totalFyc','totalFyn','totalPremium'].includes(key));
 
 const PRODUCT_CATALOG=[
@@ -292,6 +312,45 @@ function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i)
 function count(key,min,max){return min+(hash(key)%(max-min+1))}
 const entries=[];
 let actualManifest=null,actualReady=false,loadingIssue=null,worksiteReady=false,worksiteSource=null;
+// Separate organization-level demo data: NOT split or allocated across domains.
+let organizationMetricReady=false;
+const organizationMetricTotals=new Map();
+function organizationMetricKey(prefix){return JSON.stringify(prefix)}
+function loadOrganizationMetrics(d,m){
+ if(d.format!=='WorkSiteKGI-organization-demo-v1'||d.version!==1||d.agentCount!==m.agents.length||
+ !Array.isArray(d.teamLeaders)||!Array.isArray(d.newcomers))throw new Error('組織模擬資料版本錯誤');
+ const keyOfId=id=>{
+  if(!Number.isInteger(id)||id<0||id>=m.agents.length)throw new Error('組織模擬資料人員索引錯誤');
+  return JSON.stringify(m.agents[id]);
+ };
+ // Same full personnel identity may be present more than once in source agents:
+ // canonicalize first, then keep the statistic distinct at every organization depth.
+ const unique=new Map();
+ for(const [metric,ids] of [['teamCount',d.teamLeaders],['newcomers',d.newcomers]]){
+  const seen=new Set();
+  for(const id of ids){
+   const personnelKey=keyOfId(id);
+   if(seen.has(personnelKey))throw new Error('組織模擬資料有重複人員');
+   seen.add(personnelKey);
+   let stat=unique.get(personnelKey);
+   if(!stat){stat={path:m.agents[id],teamCount:0,newcomers:0};unique.set(personnelKey,stat)}
+   stat[metric]=1;
+  }
+ }
+ organizationMetricTotals.clear();
+ for(const stat of unique.values()){
+  for(let depth=0;depth<=4;depth++){
+   const key=organizationMetricKey(stat.path.slice(0,depth));
+   if(!organizationMetricTotals.has(key))organizationMetricTotals.set(key,{teamCount:0,newcomers:0});
+   const sums=organizationMetricTotals.get(key);
+   sums.teamCount+=stat.teamCount;sums.newcomers+=stat.newcomers;
+  }
+ }
+ organizationMetricReady=true;
+}
+function organizationMetrics(prefix){
+ return organizationMetricReady?(organizationMetricTotals.get(organizationMetricKey(prefix))||{teamCount:0,newcomers:0}):{teamCount:null,newcomers:null};
+}
 async function readCompressedShard(url){
  const response=await fetch(url,{cache:'no-cache'});
  if(!response.ok)throw new Error('資料下載失敗：'+url+'（'+response.status+'）');
@@ -332,6 +391,9 @@ async function loadActualData(){
   if(!response.ok)throw new Error('索引載入失敗（'+response.status+'）');
   const m=await response.json();
   if(m.format!=='WorkSiteKGI-demo-real-v1')throw new Error('資料版本不一致');
+  const orgResponse=await fetch('data/organization-metrics.json',{cache:'no-cache'});
+  if(!orgResponse.ok)throw new Error('組織模擬資料下載失敗（'+orgResponse.status+'）');
+  loadOrganizationMetrics(await orgResponse.json(),m);
   const blocks=await Promise.all(m.shards.map(async x=>({month:x.month,rows:await readCompressedShard('data/'+x.file),expected:x.rows})));
   const indexed=new Map(),tally={2025:0,2026:0};
   for(const block of blocks){
@@ -374,17 +436,9 @@ function sum(items,yearOffset=0){
  const years=[];for(let year=Number(a.slice(0,4));year<=Number(b.slice(0,4));year++)years.push(String(year));
  if(!actualReady||years.some(year=>!actualManifest.audit[year]))return result;
  result.fyc=0;result.fyn=0;result.premium=0;result.totalFyc=0;
- // Assign reproducible demo group/newcomer values at the individual
- // agent+worksite-category leaf, NEVER at an aggregate or a subtotal.
- // Summing the same leaves across every hierarchy makes every category,
- // organization subtotal, and grand total reconcile exactly.
- result.teamCount=0;result.newcomers=0;
- for(const item of items){
-  if(!item.rows?.some(entry=>inWorkMonthRange(entry.month,a,b)))continue;
-  const leafKey=JSON.stringify([...item.path,item.domain]);
-  result.teamCount+=(hash('demo-team-v1|'+leafKey)%9===0?1:0);
-  result.newcomers+=(hash('demo-newcomer-v1|'+leafKey)%7===0?1:0);
- }
+ // Organization-level team/newcomer figures are NOT workplace-domain metrics.
+ // They live in organizationMetricTotals and are rendered once per organization.
+ // sum(items) deliberately leaves both null so category rows never report them.
  if(worksiteReady){
   const distinct=new Map();
   for(const item of items)if(item.siteIds)for(const siteId of item.siteIds)distinct.set(siteId,item.domain);
@@ -570,7 +624,9 @@ function toggleSort(key){
 }
 function sortedOrganizations(names,matching){
  if(!sortMetric)return [...names].sort(compareOrganizationNames);
- const totals=new Map(names.map(name=>[name,sum(matching.filter(item=>item.path[path.length]===name))[sortMetric]]));
+ const totals=new Map(names.map(name=>[name,ORGANIZATION_METRICS.has(sortMetric)
+  ?organizationMetrics([...path,name])[sortMetric]
+  :sum(matching.filter(item=>item.path[path.length]===name))[sortMetric]]));
  return [...names].sort((a,b)=>{
   const difference=(totals.get(a)-totals.get(b))*(sortDirection==='desc'?-1:1);
   return difference||a.localeCompare(b,'zh-TW');
@@ -771,15 +827,16 @@ function render(){
  byId('period').textContent=start+' ～ '+end;byId('leveltitle').textContent=LEVELS[level];
  const crumb=byId('crumb');crumb.replaceChildren();
  LEVELS.slice(0,level+1).forEach((name,i)=>{if(i){const sep=document.createElement('span');sep.textContent='›';crumb.append(sep)}const b=document.createElement('button');b.textContent=i===0?'通路總計':path[i-1];b.disabled=i===level;b.onclick=()=>{path=path.slice(0,i);render()};crumb.append(b)});
- const cols=TABLE_METRICS.filter(m=>VISIBLE.has(m[0]));const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');
+ const orgCols=TABLE_METRICS.filter(([key])=>ORGANIZATION_METRICS.has(key)&&VISIBLE.has(key));
+ const cols=TABLE_METRICS.filter(([key])=>!ORGANIZATION_METRICS.has(key)&&VISIBLE.has(key));
+ const th=byId('thead');th.replaceChildren();const tr=document.createElement('tr');
  const first=document.createElement('th');first.textContent=['區域中心','業務區','通訊處','業務員'][level]||'業務員';
  const nameSort=document.createElement('button');nameSort.type='button';nameSort.className='metric-sort';
  nameSort.textContent=first.textContent+' '+(!sortMetric?'▲':'⇅');
  nameSort.title='恢復依名稱排序';
  nameSort.onclick=()=>{sortMetric=null;sortDirection='name';render()};
  first.replaceChildren(nameSort);first.append(filterHost);tr.append(first);
- const dom=document.createElement('th');dom.textContent='職域';dom.style.textAlign='left';dom.append(domainFilterHost);tr.append(dom);
- for(const [key,label] of cols){
+ function addMetricHeader(key,label){
   const h=document.createElement('th'),btn=document.createElement('button'),symbol=document.createElement('span');
   btn.type='button';btn.className='metric-sort';btn.onclick=()=>toggleSort(key);
   btn.setAttribute('aria-sort',sortMetric===key?(sortDirection==='desc'?'descending':'ascending'):'none');
@@ -788,10 +845,13 @@ function render(){
   if(label==='實動率')btn.title+='。定義：FYN > 0 的不重複業務員人數 ÷ 全部不重複業務員人數 × 100%';
   const targetMetric=key==='active'||key==='achievedOperators';
   if(targetMetric)h.append(targetHelp(key));else h.append(btn);
-  // Preserve manual sorting for both target columns.
   if(targetMetric){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依'+label+'排序';h.append(sort)}
   tr.append(h);
  }
+ // Organizational fields are physically between the organization name and domain.
+ for(const [key,label] of orgCols)addMetricHeader(key,label);
+ const dom=document.createElement('th');dom.textContent='職域';dom.style.textAlign='left';dom.append(domainFilterHost);tr.append(dom);
+ for(const [key,label] of cols)addMetricHeader(key,label);
  th.append(tr);
  if(!byId('orgFilterMenu').hidden)requestAnimationFrame(positionOrganizationFilter);
  if(!byId('domainFilterMenu').hidden)requestAnimationFrame(positionDomainFilter);
@@ -818,18 +878,38 @@ function render(){
    else if(row.grandTotal)r.className='total';
    else if(row.grandGroup)r.className='grand-group';
    else if(i%groupSize===0&&i>0)r.className='groupstart';
-   if(row.grandGroup&&row.domain===shownDomains[0]){
-     const n=document.createElement('td');n.className='grand-org';n.rowSpan=groupSize;n.textContent='總計';r.append(n);
-   }else if(row.grandTotal&&shownDomains.length===0){
-      const n=document.createElement('td');n.className='grand-org';n.textContent='總計';r.append(n);
-    }else if(!row.grandGroup&&!row.grandTotal&&i%groupSize===0){
-     const n=document.createElement('td');n.className='org-cell';n.rowSpan=groupSize;
-     if(level<3){
-       const button=document.createElement('button');button.className='orglink';button.textContent=row.name+' ↗';
-       button.title='查看'+row.name+'的下一層';
-       button.onclick=()=>{path.push(row.name);render();window.scrollTo({top:0,behavior:'smooth'})};n.append(button);
-     }else{const title=document.createElement('strong');title.textContent=row.name;n.append(title)}
-     const sub=document.createElement('span');sub.className='subline';sub.textContent=level===3?'示範業務員':'';if(level===3)n.append(sub);r.append(n);
+   // Exactly one organization/name cell and one merged cell per organization KPI.
+   // These span all workplace categories AND the subtotal row. Grand totals do likewise.
+   const grandStart=(row.grandGroup&&row.domain===shownDomains[0])||(row.grandTotal&&shownDomains.length===0);
+   const organizationStart=!row.grandGroup&&!row.grandTotal&&i%groupSize===0;
+   if(grandStart){
+    const n=document.createElement('td');n.className='grand-org';n.rowSpan=groupSize;n.textContent='總計';r.append(n);
+   }else if(organizationStart){
+    const n=document.createElement('td');n.className='org-cell';n.rowSpan=groupSize;
+    if(level<3){
+      const button=document.createElement('button');button.className='orglink';button.textContent=row.name+' ↗';
+      button.title='查看'+row.name+'的下一層';
+      button.onclick=()=>{path.push(row.name);render();window.scrollTo({top:0,behavior:'smooth'})};n.append(button);
+    }else{const title=document.createElement('strong');title.textContent=row.name;n.append(title)}
+    const sub=document.createElement('span');sub.className='subline';sub.textContent=level===3?'示範業務員':'';
+    if(level===3)n.append(sub);r.append(n);
+   }
+   if(grandStart||organizationStart){
+    const metrics=grandStart
+     ?names.reduce((acc,name)=>{
+        const next=organizationMetrics([...path,name]);
+        for(const key of ORGANIZATION_METRICS)
+         acc[key]=acc[key]===null||next[key]===null?null:acc[key]+next[key];
+        return acc;
+      },{teamCount:0,newcomers:0})
+     :organizationMetrics([...path,row.name]);
+    for(const [key] of orgCols){
+      const cell=document.createElement('td');cell.className='org-metric-cell';
+      if(grandStart)cell.classList.add('grand-org-metric');
+      cell.rowSpan=groupSize;
+      cell.textContent=metrics[key]===null?'—':fmt(metrics[key]);
+      r.append(cell);
+    }
    }
    const d=document.createElement('td');d.textContent=row.domain;d.style.textAlign='left';r.append(d);
    const values=sum(row.items);
