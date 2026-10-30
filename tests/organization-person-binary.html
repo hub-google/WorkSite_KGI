@@ -1,0 +1,67 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>組數與新人數｜底層去重實機驗收</title><style>
+body{font:15px/1.65 system-ui,"Noto Sans TC",sans-serif;color:#1d3547;background:#f2f7fa;max-width:1080px;margin:28px auto;padding:20px}
+pre{white-space:pre-wrap;word-break:break-word;background:#fff;padding:20px;border:1px solid #d5e5f0;border-radius:12px}
+iframe{position:absolute;left:-2800px;top:0;width:1450px;height:900px;border:0}
+</style></head><body><h1>組數與新人數｜業務員 0／1 逐層加總驗收</h1><p>使用真實 GitHub Pages 的現行績效頁＋兩份資料來源，逐層核對完整組織前綴、每人最多 1、六區合計、業務員值及表格顯示。</p><strong id="status">載入與驗收中…</strong><pre id="result"></pre><iframe id="page" src="/WorkSite_KGI/performance/?qa_org_person=97dfd36a" title="live performance"></iframe>
+<script>
+(async()=>{
+const results=[],fails=[];const print=(name,pass,explain)=>{results.push((pass?'PASS ':'FAIL ')+name+'｜'+explain);if(!pass)fails.push(name);document.querySelector('#result').textContent=results.join('\n')};
+const delay=n=>new Promise(r=>setTimeout(r,n));const wait=async(fn,t=85000)=>{const s=Date.now();while(Date.now()-s<t){try{const r=fn();if(r)return r}catch(e){}await delay(250)}throw Error('等候逾時')};
+const fetchJ=async path=>{const r=await fetch('/WorkSite_KGI/'+path,{cache:'no-store'});if(!r.ok)throw Error(path+': '+r.status);return r.json()};
+const format=v=>String(v).replace(/,/g,'').trim(),number=v=>Number(format(v));
+try{
+const [m,d]=await Promise.all([fetchJ('data/manifest.json'),fetchJ('data/organization-metrics.json')]);
+print('新資料格式與總量',d.teamLeaders.length===1560&&d.newcomers.length===1055&&d.targets?.teamCount===1560&&d.targets?.newcomers===1055,'teamLeaders='+d.teamLeaders.length+', newcomers='+d.newcomers.length);
+const people=new Map();
+for(let i=0;i<m.agents.length;i++){const path=m.agents[i],key=JSON.stringify(path);if(!people.has(key))people.set(key,{path,teams:0,newcomers:0})}
+let indexesValid=true,duplicates=0;
+for(const [key,ids] of [['teams',d.teamLeaders],['newcomers',d.newcomers]]){
+for(const id of ids){if(!Number.isInteger(id)||id<0||id>=m.agents.length){indexesValid=false;continue}
+const person=people.get(JSON.stringify(m.agents[id]));person[key]++;if(person[key]>1)duplicates++;
+}}
+print('底層 1,724 位人員、各項每人 0 或 1',indexesValid&&duplicates===0&&people.size===1724,
+ 'unique='+people.size+', invalidIndex='+(!indexesValid)+', duplicates='+duplicates);
+const prefixes=new Map();
+for(const person of people.values()){
+for(let depth=0;depth<=4;depth++){
+const key=JSON.stringify(person.path.slice(0,depth));
+if(!prefixes.has(key))prefixes.set(key,{teams:0,newcomers:0,headcount:0});
+const sum=prefixes.get(key);sum.teams+=person.teams;sum.newcomers+=person.newcomers;sum.headcount++;
+}}
+const all=prefixes.get('[]'),bounds=[...prefixes.values()].every(v=>v.teams<=v.headcount&&v.newcomers<=v.headcount);
+print('全通路 1,560 組／1,055 新人',all.teams===1560&&all.newcomers===1055,
+ 'teams='+all.teams+', newcomers='+all.newcomers+', population='+all.headcount);
+print('每一組織都不會一人算多次',bounds,'checked prefixes='+prefixes.size);
+const regionOrder=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
+const expected=[[265,225],[235,125],[234,170],[349,245],[193,120],[284,170]];
+const resultsByRegion=regionOrder.map((name,i)=>({name,real:prefixes.get(JSON.stringify([name])),expected:expected[i]}));
+print('六區分布及加總',resultsByRegion.every(r=>r.real.teams===r.expected[0]&&r.real.newcomers===r.expected[1])&&
+resultsByRegion.reduce((n,r)=>n+r.real.teams,0)===all.teams&&resultsByRegion.reduce((n,r)=>n+r.real.newcomers,0)===all.newcomers,
+ resultsByRegion.map(r=>r.name+'='+r.real.teams+'/'+r.real.newcomers).join('；'));
+const frame=document.querySelector('#page'),doc=()=>frame.contentDocument;
+await wait(()=>doc()?.querySelector('#tbody .org-metric-cell')&&doc()?.querySelector('#realDataStatus')?.hidden===true);
+const W=frame.contentWindow;
+if(typeof W.organizationMetrics!=='function')throw Error('主網站組織計算函式不存在');
+let mismatch=0,examples=[];
+for(const [key,value] of prefixes){
+const actual=W.organizationMetrics(JSON.parse(key));
+if(actual.teamCount!==value.teams||actual.newcomers!==value.newcomers){
+ mismatch++;if(examples.length<5)examples.push(key+' '+actual.teamCount+'/'+actual.newcomers+' != '+value.teams+'/'+value.newcomers);
+}}
+print('網站前端逐一核對所有組織與業務員',mismatch===0,
+ 'matched='+(prefixes.size-mismatch)+'/'+prefixes.size+(examples.length?' mismatches='+examples.join(' | '):''));
+const tbody=doc().querySelector('#tbody');
+const regionRows=[...tbody.querySelectorAll('td.org-cell')].map(cell=>{
+const tr=cell.closest('tr'),metric=[...tr.querySelectorAll('td.org-metric-cell')];
+return {name:cell.textContent.trim().replace(/\s*↗.*$/,''),teams:number(metric[0]?.textContent??'NaN'),newcomers:number(metric[1]?.textContent??'NaN'),rowSpan:metric[0]?.rowSpan}
+});
+const uiPass=resultsByRegion.every(r=>{const cell=regionRows.find(x=>x.name===r.name);return cell&&cell.teams===r.real.teams&&cell.newcomers===r.real.newcomers&&cell.rowSpan>=2});
+print('首頁六區合併儲存格與資料一致',uiPass,regionRows.map(x=>x.name+':'+x.teams+'/'+x.newcomers).join('；'));
+const grand=[...tbody.querySelectorAll('td.grand-org-metric')].map(x=>number(x.textContent));
+print('網站通路合計一致',grand.length===2&&grand[0]===1560&&grand[1]===1055,JSON.stringify(grand));
+const leadersAssigned=[...people.values()].filter(x=>x.teams===1).length,newAssigned=[...people.values()].filter(x=>x.newcomers===1).length;
+print('不是直接把單一員工放大 10／5 倍',leadersAssigned===1560&&newAssigned===1055&&bounds,'獨立當組長人數='+leadersAssigned+'、獨立新人數='+newAssigned);
+}catch(e){print('驗收執行例外',false,String(e?.stack||e))}
+document.querySelector('#status').textContent=fails.length?'FAIL（'+fails.length+' 項）':'PASS（全部通過）';
+})();
+</script></body></html>
