@@ -319,6 +319,11 @@ function organizationMetricKey(prefix){return JSON.stringify(prefix)}
 function loadOrganizationMetrics(d,m){
  if(d.format!=='WorkSiteKGI-organization-demo-v1'||d.version!==1||d.agentCount!==m.agents.length||
  !Array.isArray(d.teamLeaders)||!Array.isArray(d.newcomers))throw new Error('組織模擬資料版本錯誤');
+ // Optional schema-level target checks for this fixed-size organization demo.
+ // Personnel indices are binary membership lists, never per-person weights.
+ if(d.targets&&(d.teamLeaders.length!==d.targets.teamCount||
+ d.newcomers.length!==d.targets.newcomers))
+  throw new Error('組數／新人數模擬資料筆數與目標不一致');
  const keyOfId=id=>{
   if(!Number.isInteger(id)||id<0||id>=m.agents.length)throw new Error('組織模擬資料人員索引錯誤');
   return JSON.stringify(m.agents[id]);
@@ -345,6 +350,11 @@ function loadOrganizationMetrics(d,m){
    const sums=organizationMetricTotals.get(key);
    sums.teamCount+=stat.teamCount;sums.newcomers+=stat.newcomers;
   }
+ }
+ if(d.targets){
+  const grand=organizationMetricTotals.get(organizationMetricKey([]));
+  if(grand?.teamCount!==d.targets.teamCount||grand?.newcomers!==d.targets.newcomers)
+   throw new Error('組數／新人數底層去重後總計不符');
  }
  organizationMetricReady=true;
 }
