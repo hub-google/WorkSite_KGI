@@ -6,7 +6,11 @@
 /* Channel-level KPI composition and year-over-year bars (other levels keep the detail table). */
 #summaryDashboard .dashboard-metricbox{display:none}
 #summaryDashboard .dashboard-heading p{max-width:750px}
-#dashboardGrid{display:grid;grid-template-columns:minmax(0,650px);justify-content:center;gap:16px}
+#dashboardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+#dashboardGrid .ring-card{width:100%;min-width:0}
+#dashboardGrid .ring-svg{max-width:620px}
+@media(max-width:1040px){#dashboardGrid{grid-template-columns:1fr}#dashboardGrid .ring-card{max-width:650px;margin-inline:auto}}
+@media(max-width:620px){#dashboardGrid{gap:12px;padding:12px}#dashboardGrid .ring-card{padding:12px 4px 6px}}
 .chart-selector{display:flex;align-items:center;gap:9px;margin-left:auto}
 .chart-selector label{font-size:13px;font-weight:700;color:#466780}
 .chart-selector select{min-width:120px;border:1px solid #c7d8e5;border-radius:9px;background:white;color:#2a597f;padding:8px 12px;font-size:14px;font-weight:700;cursor:pointer}
@@ -23,6 +27,7 @@
 .ring-total{font-size:13px;color:#71859a;font-variant-numeric:tabular-nums;font-weight:650}
 .ring-workplace-total{color:#3f6c97;font-weight:800;margin-top:1px}
 .ring-svg{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif}
+.ring-period{font-size:11px;color:#8b9eaf;margin-top:2px}
 .yoy-wrap{border-top:1px solid #e4ebf1;padding:20px 19px 24px}
 .yoy-header{margin:0 0 17px}
 .yoy-header h2{margin:0;color:#1f405b;font-size:19px}
@@ -481,97 +486,90 @@ function renderDashboard(items,showYoY){
  ];
  const activeChart=byId('chartMetricFilter').value||'FYC';
  for(const field of datasets){
-  // The four workplace slices and the "other" slice exhaust the overall KPI.
-  const worksiteSlices=domainTotals.map(x=>({label:x.domain,color:x.color,value:sum(x.items)[field.part]}));
-  const workplaces=worksiteSlices.reduce((acc,x)=>acc+x.value,0);
-  const hasOverall=Number.isFinite(total[field.whole]);
-  const slices=hasOverall?[{label:'其他'+field.name,color:'#637588',value:total[field.whole]-workplaces},...worksiteSlices]:worksiteSlices;
-  const ringValue=slices.reduce((n,x)=>n+Math.max(0,x.value),0);
-  const pieCard=document.createElement('article');pieCard.className='metric-card pie-card ring-card';
-  const top=document.createElement('div');top.className='ring-heading';
-  const heading=document.createElement('h3'),pill=document.createElement('span');
-  pill.className='ring-kpi';pill.textContent=field.name;heading.append(pill);
-  const summary=document.createElement('span');summary.className='ring-total';
-  summary.textContent=field.name+'：'+(hasOverall?compact(total[field.whole])+'（模擬）':'—（無整體資料）');
-  const worksiteTotal=document.createElement('span');worksiteTotal.className='ring-total ring-workplace-total';
-  worksiteTotal.textContent='職域'+field.name+'合計：'+compact(workplaces);
-  top.append(heading,summary,worksiteTotal);pieCard.append(top);
-  const totalValue=hasOverall?total[field.whole]:ringValue,ratio=hasOverall&&totalValue?workplaces/totalValue*100:null;
-  const cx=275,cy=183,outer=119,inner=76;
-  const svg=node('svg',{viewBox:'0 0 550 370',class:'pie-svg ring-svg',role:'img',
-   'aria-label':'職域'+field.name+(ratio===null?'整體占比無來源':'整體占比 '+fmtFixed(ratio,1)+'%')+'。'+slices.map(x=>x.label+fmt(x.value)+'，'+fmtFixed(ringValue?Math.max(0,x.value)/ringValue*100:0,1)+'%').join('；')});
-  const slicePath=(a,b)=>{
-   const p0=xy(cx,cy,outer,a),p1=xy(cx,cy,outer,b),q1=xy(cx,cy,inner,b),q0=xy(cx,cy,inner,a);
-   const large=b-a>Math.PI?1:0;
-   return 'M '+p0.x+' '+p0.y+' A '+outer+' '+outer+' 0 '+large+' 1 '+p1.x+' '+p1.y+
-    ' L '+q1.x+' '+q1.y+' A '+inner+' '+inner+' 0 '+large+' 0 '+q0.x+' '+q0.y+' Z';
-  };
-  svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:'#e8eef4','stroke-width':outer-inner}));
-  const callouts=[],tau=2*Math.PI;let angle=-Math.PI/2;
-  for(const part of slices){
-   const share=ringValue?Math.max(0,part.value)/ringValue:0,sweep=share*tau;
-   if(share>0){
-    const mid=angle+sweep/2;
-    if(share>=0.999999){
-     svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:part.color,'stroke-width':outer-inner}));
-    }else{
-     svg.append(node('path',{d:slicePath(angle,angle+sweep),fill:part.color,stroke:'#fff','stroke-width':1.1,'stroke-linejoin':'round'}));
-    }
-    const tip=xy(cx,cy,outer+2,mid);
-    callouts.push({...part,share,mid,tip,side:tip.x<cx?'left':'right'});
-   }
-   angle+=sweep;
-  }
-  // The center percentage compares workplace KPI with its entire organization KPI.
-  svg.append(node('text',{x:cx,y:cy-30,'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#69849c'},'佔整體'+field.name));
-  const rate=node('text',{x:cx,y:cy+19,'text-anchor':'middle','font-size':ratio>=100?44:54,'font-weight':850,fill:'#4e8fdb','font-variant-numeric':'tabular-nums'});
-  rate.append(node('tspan',{},ratio===null?'—':fmtFixed(ratio,1)));
-  if(ratio!==null)rate.append(node('tspan',{'font-size':25,'font-weight':700},'%'));
-  svg.append(rate);
-  // Workplace subtotal is shown directly below the headline total.
-  // Keep each label beside its own slice, based on its actual midpoint angle.
-  // Do not collapse the labels into a side legend or draw leader lines.
-  const occupied=[];
-  for(const part of callouts){
-   const ux=Math.cos(part.mid),uy=Math.sin(part.mid);
-   const anchor=ux < -0.3?'end':ux>0.3?'start':'middle';
-   const amountText=compact(part.value)+' · '+fmtFixed(part.share*100,1)+'%';
-   const width=Math.max(part.label.length*13*0.82,amountText.length*12*0.63);
-   const bounds=(x,y)=>{
-    const l=anchor==='end'?x-width:anchor==='start'?x:x-width/2;
-    return {left:l,right:l+width,top:y-16,bottom:y+16};
-   };
-   let pos=null;
-   // Move outward radially only when necessary to prevent overlapping adjacent labels.
-   for(let extra=0;extra<=72;extra+=9){
-    const radius=outer+23+extra;
-    const x=cx+ux*radius+(anchor==='start'?7:anchor==='end'?-7:0);
-    const y=cy+uy*radius;
-    const b=bounds(x,y);
-    if(b.left<8||b.right>542||b.top<12||b.bottom>356)continue;
-    if(!occupied.some(p=>b.left<p.right+5&&b.right>p.left-5&&b.top<p.bottom+5&&b.bottom>p.top-5)){
-     pos={x,y,b};break;
-    }
-   }
-   if(!pos){
-    // Edge fallback: use the closest legal label position to the sector midpoint.
-    const radius=outer+23;
-    const desiredX=cx+ux*radius+(anchor==='start'?7:anchor==='end'?-7:0);
-    const x=Math.max(8+width*(anchor==='end'?1:anchor==='middle'?0.5:0),
-     Math.min(542-width*(anchor==='start'?1:anchor==='middle'?0.5:0),desiredX));
-    const y=Math.max(30,Math.min(340,cy+uy*radius));
-    pos={x,y,b:bounds(x,y)};
-   }
-   occupied.push(pos.b);
-   const label=node('text',{x:pos.x,y:pos.y-7,'text-anchor':anchor,
-    'font-size':13,'font-weight':800,fill:'#30475f'});
-   label.append(node('tspan',{x:pos.x},part.label));
-   label.append(node('tspan',{x:pos.x,dy:17,'font-size':12,'font-weight':650,fill:'#55718a'},amountText));
-   svg.append(label);
-  }
-  if(!totalValue)svg.append(node('text',{x:cx,y:340,'text-anchor':'middle','font-size':13,fill:'#8392a2'},'此範圍尚無業績'));
-  pieCard.append(svg);if(field.name===activeChart)root.append(pieCard);
 
+  if(field.name===activeChart){
+   for(const period of [{label:'今年',offset:0},{label:'去年',offset:-1}]){
+    const periodTotal=period.offset===0?total:totalPrevious;
+    const components=domainTotals.map(x=>({label:x.domain,color:x.color,value:sum(x.items,period.offset)[field.part]}));
+    const workplace=components.reduce((a,x)=>a+(Number(x.value)||0),0);
+    const totalValue=periodTotal[field.whole],known=Number.isFinite(totalValue);
+    const portions=known?[{label:'其他'+field.name,color:'#637588',value:totalValue-workplace},...components]:components;
+    const positive=portions.filter(x=>Number(x.value)>0);
+    const ringTotal=positive.reduce((a,x)=>a+x.value,0);
+    const ratio=known&&totalValue!==0?100*workplace/totalValue:null;
+    const card=document.createElement('article');card.className='metric-card pie-card ring-card';
+    const top=document.createElement('div');top.className='ring-heading';
+    const h=document.createElement('h3'),pill=document.createElement('span');
+    pill.className='ring-kpi';pill.textContent=period.label+field.name;h.append(pill);
+    const whole=document.createElement('span');whole.className='ring-total';
+    whole.textContent=period.label+field.name+'：'+(known?compact(totalValue)+'（模擬）':'—');
+    const subtotal=document.createElement('span');subtotal.className='ring-total ring-workplace-total';
+    subtotal.textContent='職域'+field.name+'合計：'+compact(workplace);
+    const dates=document.createElement('span');dates.className='ring-period';
+    dates.textContent=period.offset===0?start+' ～ '+end:shiftYear(start,-1)+' ～ '+shiftYear(end,-1);
+    top.append(h,whole,subtotal,dates);card.append(top);
+    const cx=270,cy=213,outer=112,inner=70,tau=2*Math.PI;
+    const svg=node('svg',{viewBox:'0 0 540 415',class:'pie-svg ring-svg',role:'img',
+     'aria-label':period.label+field.name+'職域合計'+fmt(workplace)+'，佔整體'+(ratio===null?'無資料':fmtFixed(ratio,1)+'%')+
+      '，分類：'+portions.map(x=>x.label+fmt(x.value||0)).join('；')});
+    svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:'#e9eff4','stroke-width':outer-inner}));
+    const ringPoint=(r,a)=>xy(cx,cy,r,a);
+    const arc=(a,b)=>{
+     const p=ringPoint(outer,a),q=ringPoint(outer,b);
+     const v=ringPoint(inner,b),w=ringPoint(inner,a);
+     const large=b-a>Math.PI?1:0;
+     return 'M '+p.x+' '+p.y+' A '+outer+' '+outer+' 0 '+large+' 1 '+q.x+' '+q.y+
+      ' L '+v.x+' '+v.y+' A '+inner+' '+inner+' 0 '+large+' 0 '+w.x+' '+w.y+' Z';
+    };
+    const callouts=[];
+    let angle=-Math.PI/2;
+    for(const item of positive){
+     const share=ringTotal?item.value/ringTotal:0,sweep=tau*share;
+     if(share>=0.999999){
+      svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:item.color,'stroke-width':outer-inner}));
+     }else if(sweep>0){
+      svg.append(node('path',{d:arc(angle,angle+sweep),fill:item.color,stroke:'#fff','stroke-width':1.25}));
+     }
+     const mid=angle+sweep/2;
+     callouts.push({...item,share,mid,side:Math.cos(mid)<0?'left':'right',
+      desiredY:cy+Math.sin(mid)*(outer+20)});
+     angle+=sweep;
+    }
+    svg.append(node('text',{x:cx,y:cy-20,'text-anchor':'middle','font-size':14,'font-weight':750,fill:'#69849c'},'佔整體'+field.name));
+    const number=node('text',{x:cx,y:cy+28,'text-anchor':'middle','font-size':51,'font-weight':850,fill:'#4e8fdb'});
+    number.append(node('tspan',{},ratio===null?'—':fmtFixed(ratio,1)));
+    if(ratio!==null)number.append(node('tspan',{'font-size':25},'%'));
+    svg.append(number);
+    // Dedicated left/right label lanes; labels are ordered by arc midpoint and
+    // spaced at least 47 SVG units apart. No connector lines or overlapping text.
+    for(const side of ['left','right']){
+     const group=callouts.filter(p=>p.side===side).sort((a,b)=>a.desiredY-b.desiredY);
+     const n=group.length;if(!n)continue;
+     const gap=47,minY=39,maxY=360,span=(n-1)*gap;
+     const ideal=group.reduce((acc,p,i)=>acc+p.desiredY-i*gap,0)/n;
+     const base=Math.max(minY,Math.min(maxY-span,ideal));
+     for(let i=0;i<n;i++){
+      const low=i?group[i-1].y+gap:minY,high=maxY-(n-1-i)*gap;
+      group[i].y=Math.min(high,Math.max(low,Math.max(base+i*gap,group[i].desiredY)));
+     }
+     for(const item of group){
+      const left=side==='left',x=left?150:390;
+      const t=node('text',{x,y:item.y-9,'text-anchor':left?'end':'start',
+       'font-size':14,'font-weight':800,fill:'#30475f'});
+      t.append(node('tspan',{x},item.label));
+      t.append(node('tspan',{x,dy:18,'font-size':12.6,'font-weight':650,fill:'#55718a'},
+       compact(item.value)+' · '+fmtFixed(known&&totalValue?item.value/totalValue*100:item.share*100,1)+'%'));
+      svg.append(t);
+      svg.append(node('circle',{cx:left?157:383,cy:item.y-13,r:4.5,fill:item.color}));
+     }
+    }
+    if(!ringTotal)svg.append(node('text',{x:cx,y:363,'text-anchor':'middle','font-size':13,fill:'#8696a5'},'此期間沒有業績資料'));
+    const corrections=portions.filter(p=>Number(p.value)<0);
+    if(corrections.length)svg.append(node('text',{x:cx,y:401,'text-anchor':'middle','font-size':11,fill:'#946f78'},
+     '負向沖銷：'+corrections.map(p=>p.label+' '+compact(p.value)).join('、')));
+    card.append(svg);root.append(card);
+   }
+  }
   if(showYoY){
   const now=domainTotals.map(x=>sum(x.items)[field.part]);
   const last=domainTotals.map(x=>sum(x.items,-1)[field.part]);
