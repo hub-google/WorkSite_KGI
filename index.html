@@ -162,7 +162,7 @@
 const ORGANIZATIONS=[]; // Loaded from D:G via data/manifest.json
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠職域'];
 const normalizeDomain=name=>name==='駐廠'?'駐廠職域':name;
-const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
+const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['achievedOperators','達標經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
 // Table contribution shares are workplace-category KPI / current organization KPI total.
 // The simulated company-wide KPIs are deliberately not the denominators.
 const WORKPLACE_SHARES={fycShare:'fyc',fynShare:'fyn',premiumShare:'premium'};
@@ -244,7 +244,7 @@ function renderMetricDetail(){
 }
 
 // Default table columns: preserve prior metric order, only hide overall FYC/FYN/premium.
-const VISIBLE=new Set(['worksites','active','operators','activityRate','fyc','fyn','premium']);
+const VISIBLE=new Set(['worksites','operators','achievedOperators','activityRate','fyc','fyn','premium']);
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
 const byId=id=>document.getElementById(id);
 const today=new Date(), yyyy=today.getFullYear(), pad=n=>String(n).padStart(2,'0'), dateStr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -367,6 +367,14 @@ function sum(items,yearOffset=0){
   result.premium+=Number(row[4])||0;
  });
  result.operators=people.size;
+ // Stable 50%-90% demo target based on distinct agents in this exact row scope.
+ // A per-row random share is used to keep even filtered subgroups within bounds.
+ let agentFingerprint=0;
+ for(const personId of people.keys())agentFingerprint=(agentFingerprint+hash('agent-fingerprint:'+personId))>>>0;
+ const agentRate=50+(hash('achieved-operators-v1|'+a+'|'+b+'|'+agentFingerprint+'|'+people.size)%41);
+ const agentFloor=Math.ceil(people.size*0.5),agentCeiling=Math.floor(people.size*0.9);
+ result.achievedOperators=people.size===0?0:
+  Math.max(agentFloor,Math.min(Math.max(agentFloor,agentCeiling),Math.round(people.size*agentRate/100)));
  const positive=[...people.values()].filter(v=>v>0).length;
  result.activityRate=people.size?Math.round(positive/people.size*1000)/10:0;
  // FYC overall is already computed additively from source rows using 3-6x.
@@ -437,7 +445,7 @@ function renderDomainFilter(){
  btn.title='篩選職域（'+(n===DOMAINS.length?'全部':n+'/'+DOMAINS.length)+'）';
  btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded',String(!menu.hidden));
  list.replaceChildren();
- for(const domain of DOMAINS){
+ for(const domain of orderedGlobalDomains()){
   const label=document.createElement('label'),input=document.createElement('input');
   input.type='checkbox';input.checked=selection.has(domain);
   input.onchange=()=>{const next=new Set(domainFilters.get(filterScopeKey())||DOMAINS);if(input.checked)next.add(domain);else next.delete(domain);setDomainSelection(next)};
@@ -448,8 +456,31 @@ function renderDomainFilter(){
 }
 
 let sortMetric=null,sortDirection='name';
+const REGION_ORDER=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
+const regionOrderIndex=name=>{const idx=REGION_ORDER.indexOf(name);return idx<0?REGION_ORDER.length:idx};
+function compareOrganizationNames(a,b){
+ if(path.length===0){
+  const difference=regionOrderIndex(a)-regionOrderIndex(b);
+  if(difference!==0)return difference;
+ }
+ return a.localeCompare(b,'zh-TW');
+}
+// Source-year rank across ALL regions, independent of organization/date filters.
+// The ordered categories are reused for every center/sub-organization table.
+let globalDomainOrder=null;
+function orderedGlobalDomains(){
+ if(!actualReady)return DOMAINS.slice();
+ if(!globalDomainOrder){
+  const sums=new Map(DOMAINS.map(domain=>[domain,0]));
+  forEachActualRow(entries,yyyy+'-01-01',yyyy+'-12-31',(item,row)=>{
+   if(sums.has(item.domain))sums.set(item.domain,sums.get(item.domain)+(Number(row[2])||0));
+  });
+  globalDomainOrder=DOMAINS.slice().sort((a,b)=>(sums.get(b)||0)-(sums.get(a)||0)||a.localeCompare(b,'zh-TW'));
+ }
+ return globalDomainOrder;
+}
 function filterScopeKey(){return path.join('|')}
-function availableOrganizations(items){return [...new Set(items.map(item=>item.path[path.length]))].sort((a,b)=>a.localeCompare(b,'zh-TW'))}
+function availableOrganizations(items){return [...new Set(items.map(item=>item.path[path.length]))].sort(compareOrganizationNames)}
 function filteredItems(){
  const source=entries.filter(prefixMatches),options=availableOrganizations(source);
  const selected=organizationFilters.get(filterScopeKey()),domains=domainFilters.get(filterScopeKey());
@@ -490,7 +521,7 @@ function toggleSort(key){
  render();
 }
 function sortedOrganizations(names,matching){
- if(!sortMetric)return [...names].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+ if(!sortMetric)return [...names].sort(compareOrganizationNames);
  const totals=new Map(names.map(name=>[name,sum(matching.filter(item=>item.path[path.length]===name))[sortMetric]]));
  return [...names].sort((a,b)=>{
   const difference=(totals.get(a)-totals.get(b))*(sortDirection==='desc'?-1:1);
@@ -503,13 +534,20 @@ function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
 const DOMAIN_COLORS=['#2463c5','#ed8b2c','#119b87','#943fc1','#ef6c79'];
 const TARGETS=[['闔家安康','6C'],['醫護公會',null],['台積電','72C'],['駐廠職域',null]];
-function targetHelp(){
+function targetHelp(key='active'){
+ const isAgent=key==='achievedOperators';
+ const label=isAgent?'達標經營人員數':'達標職域數';
  const wrap=document.createElement('span');wrap.className='target-help';
- const trigger=document.createElement('button');trigger.type='button';trigger.className='target-trigger';trigger.textContent='達標職域數';trigger.setAttribute('aria-label','查看達標職域數的模擬方法');trigger.setAttribute('aria-expanded','false');
+ const trigger=document.createElement('button');trigger.type='button';trigger.className='target-trigger';trigger.textContent=label;
+ trigger.setAttribute('aria-label','查看'+label+'計算說明');trigger.setAttribute('aria-expanded','false');
  const tooltip=document.createElement('span');tooltip.className='target-tooltip';tooltip.setAttribute('role','tooltip');
- const title=document.createElement('strong');title.textContent='模擬達標職域數';tooltip.append(title);
- for(const [name,target] of TARGETS){const line=document.createElement('span');line.textContent=name+'：'+(target||'尚未設定');tooltip.append(line)}
- const note=document.createElement('small');note.textContent='依有效職域數，以各類別固定隨機 30%～90% 比率模擬；同一 B 代碼只算一次、各層級一致。非實際達標數。';tooltip.append(note);
+ const title=document.createElement('strong');title.textContent=label+'計算說明';tooltip.append(title);
+ if(isAgent){
+  const note=document.createElement('small');note.textContent='由各列去重經營人員數，以固定隨機 50%～90% 比率估算達標人數；同一統計條件數值固定，非實際考核結果。人數極少時受整數限制。';tooltip.append(note);
+ }else{
+  for(const [name,target] of TARGETS){const line=document.createElement('span');line.textContent=name+'：'+(target||'尚未設定');tooltip.append(line)}
+  const note=document.createElement('small');note.textContent='依有效職域數，以各類別固定隨機 30%～90% 比率估算；同一 B 代碼只算一次。';tooltip.append(note);
+ }
  trigger.onclick=e=>{e.stopPropagation();const opening=!wrap.classList.contains('open');document.querySelectorAll('.target-help.open').forEach(el=>{el.classList.remove('open');el.querySelector('button')?.setAttribute('aria-expanded','false')});wrap.classList.toggle('open',opening);trigger.setAttribute('aria-expanded',String(opening))};
  wrap.append(trigger,tooltip);return wrap
 }
@@ -700,9 +738,10 @@ function render(){
   btn.title='依'+label+'排序；首次點擊降冪，再次點擊升冪';
   btn.append(document.createTextNode(label));symbol.className='sort-symbol';symbol.textContent=sortMetric===key?(sortDirection==='desc'?'▼':'▲'):'⇅';btn.append(symbol);
   if(label==='實動率')btn.title+='。定義：FYN > 0 的不重複業務員人數 ÷ 全部不重複業務員人數 × 100%';
-  if(label==='達標職域數')h.append(targetHelp());else h.append(btn);
-  // Also allow sorting on the existing special target-help column.
-  if(label==='達標職域數'){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依達標職域數排序';h.append(sort)}
+  const targetMetric=key==='active'||key==='achievedOperators';
+  if(targetMetric)h.append(targetHelp(key));else h.append(btn);
+  // Preserve manual sorting for both target columns.
+  if(targetMetric){const sort=document.createElement('button');sort.type='button';sort.className='metric-sort';sort.textContent=' ⇅';sort.onclick=()=>toggleSort(key);sort.title='依'+label+'排序';h.append(sort)}
   tr.append(h);
  }
  th.append(tr);
@@ -711,7 +750,7 @@ function render(){
  const tbody=byId('tbody');tbody.replaceChildren();
  const names=sortedOrganizations([...new Set(matching.map(childName))],matching);
  const selectedDomains=domainFilters.get(filterScopeKey());
- const shownDomains=DOMAINS.filter(d=>!selectedDomains||selectedDomains.has(d));
+ const shownDomains=orderedGlobalDomains().filter(d=>!selectedDomains||selectedDomains.has(d));
  const groupSize=shownDomains.length+1;
  const rows=[];
  const orgTotals=new Map();
@@ -766,7 +805,7 @@ function render(){
      button.onclick=()=>openMetricDetail(key,label,row.items,scope);
      cell.append(button);
     }else cell.textContent=values[key]===null?'—':(WORKPLACE_SHARES[key]
-     ?fmtFixed(values[key],2)+'%'
+     ?fmtFixed(values[key],1)+'%'
      :key==='activityRate'?fmtFixed(values[key],1)+'%':fmt(values[key]));
     r.append(cell)
    }
