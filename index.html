@@ -587,7 +587,7 @@ function filteredItems(){
  const source=entries.filter(prefixMatches),options=availableOrganizations(source);
  const selected=organizationFilters.get(filterScopeKey()),domains=domainFilters.get(filterScopeKey());
  const orgItems=selected?source.filter(x=>selected.has(x.path[path.length])):source;
- return {source,options,items:domains?orgItems.filter(x=>domains.has(x.domain)):orgItems};
+ return {source,options,organizationItems:orgItems,items:domains?orgItems.filter(x=>domains.has(x.domain)):orgItems};
 }
 function setFilterSelection(names){
  organizationFilters.set(filterScopeKey(),new Set(names));
@@ -813,7 +813,7 @@ function renderDashboard(items,showYoY){
  if(showYoY)byId('yoyPeriod').textContent=start+' ～ '+end+'　對比　'+shiftYear(start,-1)+' ～ '+shiftYear(end,-1)+'（去年同期）';
 }
 function render(){
- const level=path.length,{options,items:matching}=filteredItems();
+ const level=path.length,{options,organizationItems,items:matching}=filteredItems();
  byId('policyDetailBtn').hidden=level!==3;
  // Move the filter outside the old table header before rebuilding it.
  const filterHost=byId('orgFilterRoot'),domainFilterHost=byId('domainFilterRoot');
@@ -856,7 +856,10 @@ function render(){
  if(!byId('orgFilterMenu').hidden)requestAnimationFrame(positionOrganizationFilter);
  if(!byId('domainFilterMenu').hidden)requestAnimationFrame(positionDomainFilter);
  const tbody=byId('tbody');tbody.replaceChildren();
- const names=sortedOrganizations([...new Set(matching.map(childName))],matching);
+ // Organizational headcount/teams are independent of the workplace-category filter.
+ // Keep the organizational rows and the organization-only grand total stable
+ // even when a selected category has no FYC in some centers.
+ const names=sortedOrganizations([...new Set(organizationItems.map(childName))],matching);
  const selectedDomains=domainFilters.get(filterScopeKey());
  const shownDomains=orderedGlobalDomains().filter(d=>!selectedDomains||selectedDomains.has(d));
  const groupSize=shownDomains.length+1;
