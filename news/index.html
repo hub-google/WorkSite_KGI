@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#122740">
+<title>最新消息｜職域經營平台</title>
+<style>body{margin:0;background:#f4f7fb;color:#192d43;font:16px system-ui,"Noto Sans TC",sans-serif}.loading{padding:40px 20px;text-align:center}a{color:#135b8e}</style>
+</head>
+<body>
+<div class="loading" id="loadStatus" role="status">正在載入最新消息…</div>
+<script>
+(async()=>{
+ try{
+  // Keep the route URL while running the single maintained website HTML.
+  // A <base> in the shared document pins all data/CSS paths to /WorkSite_KGI/.
+  const response=await fetch('/WorkSite_KGI/index.html',{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const html=await response.text();
+  if(!html.includes('id="sidebar"')||!html.includes('const PAGE_ROUTES='))throw new Error('共用頁面未更新');
+  document.open();
+  document.write(html);
+  document.close();
+ }catch(err){
+  document.getElementById('loadStatus').textContent='頁面載入失敗：'+String(err.message||err)+'。';
+  const a=document.createElement('a');a.href='/WorkSite_KGI/';a.textContent='返回績效管理';
+  document.getElementById('loadStatus').append(' ',a);
+ }
+})();
+</script>
+</body>
+</html>
