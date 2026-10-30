@@ -166,6 +166,8 @@
 
 ### 6.1 業務員層是否達標（2026-10-30 變更）
 
+**可重跑實機測試**：在網站開啟 [tests/salesperson-achievement.html](../tests/salesperson-achievement.html)（[線上直連](https://hub-google.github.io/WorkSite_KGI/tests/salesperson-achievement.html)）。測試頁使用**同網域真實績效 iframe、實際點擊**進行三層下鑽、讀取 DOM O/X、檢查總計列、切換欄位 checkbox、提示及麵包屑返回；結果需顯示 `PASS（全部通過）`，不可僅憑靜態程式碼判定通過。後續版本部署須重新執行此測試，並保存成功/失敗紀錄。第一個通訊處如未同時出現 O/X，將再訪問其他通訊處驗證兩種映射。
+
 | ID | 操作 | 預期 |
 |---|---|---|
 | AGENT-01 | 由通路總計下鑽區域中心、業務區、通訊處 | 達標欄一律為「達標經營人員數」，顯示數字 0、1 或更大的計數值 |
