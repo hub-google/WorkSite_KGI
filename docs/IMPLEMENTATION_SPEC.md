@@ -31,6 +31,7 @@
 | [../worksite-report/index.html](../worksite-report/index.html) | 職域回報網址載入殼 | 同上 |
 | [../data/manifest.json](../data/manifest.json) | 年度稽核、商品代碼、業務員路徑、分片索引 | **不能自行發明資料欄位** |
 | [../data/worksite-sites.txt](../data/worksite-sites.txt) | 名冊去重識別與層級歸屬 | **需保留資料基準** |
+| [../data/organization-metrics.json](../data/organization-metrics.json) | 組數／新人數獨立組織資料，人員與通訊處底層模擬 | **不要按職域分攤** |
 
 **重要**：REFERENCE_MARKUP.html 是結構片段，不是可以獨立直接開啟的整頁；REFERENCE_STYLE.css 是 CSS 快照，仍由 index.html 內嵌 style 執行。重寫框架可引入兩份快照的內容，但必須保留相同結果。
 
@@ -112,6 +113,8 @@
               #domainFilterAll / #domainFilterNone / #domainFilterList
               #metricBtn / #metricMenu / #metricChecks
               #thead / #tbody
+              組織名稱欄、組數／新人數獨立合併欄、職域明細欄
+              #tbody td.org-metric-cell（每組織僅一組；rowSpan 包含小計）
             dialog#metricDetailDialog
               #detailTitle / #detailScope / #detailClose
               #detailDimension / #detailTotal / #detailCategory
@@ -132,6 +135,17 @@
 
 目前 dynamic 圓環由 renderDashboard() 組裝 .metric-card.pie-card.ring-card、svg.pie-svg.ring-svg.ring-labeled，而非預先寫死 svg markup。表格表頭由 render() 重建，篩選器需先移出舊表頭、在建表後重新移入正確宿主；不得不小心刪掉原有 listener。
 
+
+### 3.1 組織指標是與職域分離的第一級表格欄位
+
+在 `render()` 中先分離 `orgCols=TABLE_METRICS.filter(key => ORGANIZATION_METRICS.has(key) && VISIBLE.has(key))` 與其他 `cols`。表頭順序必須是：**當前組織層級 → 組數 → 新人數 → 職域 → 職域相關指標**。組數、新人數仍保留在 METRICS/TABLE_METRICS/VISIBLE，以沿用原本「顯示／隱藏指標」雙向同步；但不在 domain row 的 KPI 迴圈輸出。
+
+對每個組織的首列：組織儲存格、組數、新人數各自設定 `rowSpan=shownDomains.length+1`；另外表格下方的「總計」是同樣設 rowspan 的合計儲存格。**不得**在每個職域 row 上插一個組數／新人數；也不得只在組織小計再重複一份。當任一個欄位取消勾選時，其表頭與合併儲存格一起消失。
+
+跨組織總計：只累加當前顯示的各個組織 `organizationMetrics([...path,name])`；下鑽則直接查詢加長的組織路徑。此兩項不受職域篩選，且現行依模擬名冊快照，不會隨月份變化。點這兩欄的表頭可以排序組織，不能以 `sum(items)` 返回的 null 來排序。
+
+正式後端實作時，資料模型必須拆成`organization`／`office`／`person` 等組織主體與 `worksite performance` 職域資料主體；不要在保單業績分類列建立 teamCount/newcomers 屬性。
+
 ## 4. CSS 精確復刻條件
 
 **不要只看以下概略數值就自行重畫**；以 [REFERENCE_STYLE.css](REFERENCE_STYLE.css) 完整逐條 selector（含後置覆寫及 media rules）為準，保留 CSS cascade 優先序。
@@ -151,6 +165,7 @@
 | .metric-card | radius 14px、border #dfe8f0、padding 19px |
 | #thead th（**後置覆寫**） | #204a69、white、weight 800、font 13px、padding 16px 13px、bottom border 3px #12364f |
 | .subtotal | #e9f4fa、weight 800 |
+| #tbody td.org-metric-cell | 組織層級合併儲存格、背景 #f4f8fb、tabular-nums；總計背景 #fff5cc；獨立於職域列 |
 | .total | #fff9d4、weight 800 |
 | .ring-svg | 大型 730×555 viewBox SVG、資料文字／線直接在圖上 |
 | @media(max-width:900px) | sidebar 抽屜 translateX(-238px)、main margin-left 0；cover 遮罩 |
@@ -167,10 +182,12 @@ YOY 卡包含百分比 chip、去年灰色長條與今年藍色長條；空值�
 | readCompressedShard(url) | Base64 解碼＋gzip 解壓＋JSON.parse，失敗 throw |
 | loadActualData() | manifest + 22 shard 稽核、建立 entries、載入名冊，最後 render |
 | loadWorksiteData() | 名冊 group 解析、category 08 排除、以 siteIds 補 entries |
+| loadOrganizationMetrics(d,m) | 獨立組織指標：從 agentIndex 清單去重、建立組織前綴的 teamCount/newcomers Map |
+| organizationMetrics(prefix) | 返回當前組織路徑的兩項固定模擬數據，完全不依賴職域／業績日期 |
 | inWorkMonthRange(month,a,b) | 六碼 YYYYMM 邊界含端點比對 |
 | shiftYear(month,delta) | 年份移動、月份不變 |
 | forEachActualRow(items,a,b,cb) | 只迭代選取範圍／月份來源列 |
-| sum(items,yearOffset=0) | **唯一主要 KPI 運算入口**，包含去重、模擬、比率要素 |
+| sum(items,yearOffset=0) | **職域 KPI 運算入口**，包含職域業績、去重、整體業績模擬；組數新人數不再由此分配 |
 | orderedGlobalDomains() | 全通路當年截至當月 FYC 降冪，所有組織共用順序 |
 | filteredItems() | 依 path、當層組織選擇、職域選擇得出 entries 集 |
 | availableOrganizations() | 當層可用組織列表，根層固定六區順序 |
@@ -178,7 +195,7 @@ YOY 卡包含百分比 chip、去年灰色長條與今年藍色長條；空值�
 | renderOrganizationFilter() | 組織多選器、全選全不選 |
 | renderDomainFilter() | 職域多選器、全選全不選 |
 | renderDashboard(items,showYoY) | 畫兩張當年／去年圓環及根層 3 張同期比較卡 |
-| render() | 生成麵包屑、動態表頭／指標與 table rows、小計及詳情事件 |
+| render() | 生成麵包屑、動態表頭／指標與 table rows；將組織 KPI 置於職域欄**之前**，與組織同 rowSpan；小計及詳情事件 |
 | targetHelp(key) | 達標人員／達標職域欄位的 tooltip、click 展開關閉 |
 | openMetricDetail()/renderMetricDetail() | 商品別／繳別／年期／商品名稱明細 dialog |
 | productBreakdown() | 對職域真實 KPI 按所選分類 sum；回傳排序分組 |
@@ -195,9 +212,10 @@ YOY 卡包含百分比 chip、去年灰色長條與今年藍色長條；空值�
 |---|---|---|
 | start/end | string，台灣 YYYY01 / YYYYMM 當月 | #apply click；所有 KPI/chart/table |
 | path | string[]，初始 [] | 組織下鑽或麵包屑；決定層級 |
-| entries | Array<entry> | 載入績效與名冊；全站計算來源 |
+| entries | Array<entry> | 載入績效與名冊；職域業績計算來源 |
 | actualManifest / actualReady | object/null, boolean | fetch 成功後 |
 | worksiteSource / worksiteReady | object/null, boolean | 名冊成功後 |
+| organizationMetricTotals / organizationMetricReady | Map<JSON.stringify(orgPathPrefix),{teamCount,newcomers}>, boolean | 載入 organization-metrics.json，先人員去重，再按組織前綴累加 |
 | loadingIssue | string/null | 顯示錯誤 |
 | organizationFilters | Map<pathKey,Set<string>> | org 篩選器 |
 | domainFilters | Map<pathKey,Set<string>> | 職域篩選器 |
@@ -210,7 +228,7 @@ YOY 卡包含百分比 chip、去年灰色長條與今年藍色長條；空值�
 | PAGE_ROUTES | slug 映射常數 | URL 導覽 |
 | report form state | form elements | reportType、city、district、驗證／回顯 |
 
-**日期切換對全通路職域「預設排序」無影響**；它的排序是當年完整 YTD 的參考值。日期切換則會影響業績、組數新人數、同比及圖表。**名冊職域數**按現況，不是區間歷史計數。
+**日期切換對全通路職域「預設排序」無影響**；它的排序是當年完整 YTD 的參考值。日期切換影響業績／同比／圖表，但**組數、新人數為現況組織模擬快照，不按職域或月份重新分配**。名冊職域數同樣按現況，不是區間歷史計數。
 
 ## 7. 精確算法與產物
 
