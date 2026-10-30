@@ -770,14 +770,12 @@ function renderDashboard(items,showYoY){
     number.append(node('tspan',{},ratio===null?'—':fmtFixed(ratio,1)));
     if(ratio!==null)number.append(node('tspan',{'font-size':26},'%'));
     svg.append(number);
-    // Reserve independent lanes: all ranked worksite labels on the right and
-    // the "Other" remainder at lower left, so labels never overlap the donut.
+    // Keep only worksite callouts. Suppress the residual "Other" label
+    // and its leader line without altering the donut arcs or data.
     const worksiteLabels=portions.filter(p=>!p.isResidual);
-    const otherLabel=portions.find(p=>p.isResidual);
     const labels=worksiteLabels.map((p,i)=>({
       ...p,side:'right',y:worksiteLabels.length<2?205:95+(i*365)/(worksiteLabels.length-1)
     }));
-    if(otherLabel)labels.push({...otherLabel,side:'left',y:454});
     for(const part of labels){
      const right=part.side==='right',tx=right?541:9;
      const anchor=right?'start':'start';
