@@ -14,7 +14,7 @@
 5. **[精確 CSS 快照：docs/REFERENCE_STYLE.css](docs/REFERENCE_STYLE.css)** 與 **[HTML 結構快照：docs/REFERENCE_MARKUP.html](docs/REFERENCE_MARKUP.html)** — 直接自 2026-10-30 已驗證版本擷取，不必從文字臆測畫面。
 6. **[正在運行的主程式：index.html](index.html)** — 最終精確行為與原始 SVG／表格程式，視為 golden source。
 
-復刻參考版本：2026-10-30 route 上線基準 commit **13bb971e8281e3771af3f949b56d531e572407d2**。重新設計 UI、改用其他框架或換資料來源以前，**先做到對這個版本的 DOM／視覺／數值／互動等價**。
+復刻參考版本：2026-10-30 組織層級指標改版基準 commit **7f826c6d870fe74728d8854cf35a3162446c1405**。資料層的組數／新人數來源為 [data/organization-metrics.json](data/organization-metrics.json)，不是從各職域業績列產生。重新設計 UI、改用其他框架或換資料來源以前，**先做到對這個版本的 DOM／視覺／數值／互動等價**。
 
 ## 頁面
 
