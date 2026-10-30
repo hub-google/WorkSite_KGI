@@ -5,7 +5,9 @@
 
 ## 一、資料流
 
-原始 2025／2026 業績 Excel → AQ=1 篩選、組織／商品索引化 → data/manifest.json ＋ data/shards/YYYYMM.txt → 前端讀取／解壓／驗證 → 組織與職域 leaf entries → 業績加總／圖表／表格。
+原始 2025／2026 業績 Excel → AQ=1 篩選、組織／商品索引化 → data/manifest.json ＋ data/shards/YYYYMM.txt → 前端讀取／解壓／驗證 → 職域業績 leaf entries → 業績加總／圖表／表格。
+
+組數／新人數另由 data/organization-metrics.json 提供，按 `manifest.agents` 的組織路徑建模，**不依職域**。
 
 原始「所有職域資料.xlsx」＋「職域類別代碼對照.xlsx」→ U=Y、B 職域代碼有效、I/J/K/R 組織完整 → data/worksite-sites.txt → 前端補 siteIds，依選取範圍做 COUNT DISTINCT。
 
@@ -116,15 +118,41 @@ data/worksite-sites.txt 為 Base64(GZIP(JSON))，JSON 預期含：v=2、rows=705
 
 三項整體指標都是模擬，**不是**完整真實通路資料。
 
-### 4.3 組數／新人數（必須各層可加總）
+### 4.3 組數／新人數：獨立的組織資料（必須上下層可加總）
 
-以每個「完整四段人員路徑＋職域」為一個葉節點，只有此節點在選取期間存在至少一筆來源業績才計算：
+**2026-10-30 規格異動**：舊版按「業務員＋職域」葉節點產生的 demo-team-v1／demo-newcomer-v1 算法**已廢除**。新值完全獨立於職域類別、績效日期，不能再按職域分攤或顯示，不能沿用舊版 167 組／263 位新人。
 
-    const leafKey=JSON.stringify([...item.path,item.domain]);
-    teamCount += hash('demo-team-v1|'+leafKey)%9===0 ? 1 : 0;
-    newcomers += hash('demo-newcomer-v1|'+leafKey)%7===0 ? 1 : 0;
+正式資料來源位置：**data/organization-metrics.json**，簡化結構如下：
 
-**只有葉節點抽值**，父層直接 sum(child leaves)。絕不能對每個小計重抽；同一範圍各職域加總＝組織小計；各中心小計加總＝通路總計。2026-10-30 快照通路總數為組數 167、新人數 263，供回歸測試使用。
+    {
+      "format":"WorkSiteKGI-organization-demo-v1",
+      "version":1,
+      "agentCount":1728,
+      "uniqueAgentCount":1724,
+      "officeCount":127,
+      "teamLeaders":[3,24,31,...],
+      "newcomers":[...]
+    }
+
+這兩個清單都存 `manifest.agents` 中的 **0-based 人員索引**，而不是職域資料列索引。人員主鍵是 `JSON.stringify([區域中心,業務區,通訊處,業務員])`；原 manifest 有 1728 筆人員索引，但**完整路徑去重後是 1724 人**，同名同路徑必須去重。組數／新人數各自的清單中同一完整路徑最多出現一次。
+
+目前的示範資料產生算法（如需重新生成資料）：
+
+1. 依 manifest.agents 的完整路徑去重（保留首次出現索引），按前三級路徑分出 **127 個通訊處**。
+2. 每個通訊處將人員依 `hash('org-team-v3|'+JSON.stringify(fullPath))` 由小到大排序，hash 同值時按 source index；選最前 **1 位**模擬組長，若該處去重人員 ≥20，則選前 **2 位**。各被選中者代表 1 組。
+3. 對每名去重人員，以 `hash('org-newcomer-v3|'+JSON.stringify(fullPath))%100<13` 模擬是否為新人。
+4. 產生 `teamLeaders: number[]` 及 `newcomers: number[]`（索引升冪），寫成 JSON 供網站載入。此檔案是**固定資料快照**，頁面刷新不重新抽樣。
+5. 載入時將兩種人員清單依索引轉回路徑，對每個「路徑前綴」建立加總快取：
+   - `[]`（全通路）
+   - `[區域中心]`
+   - `[區域中心, 業務區]`
+   - `[區域中心, 業務區, 通訊處]`
+   - `[區域中心, 業務區, 通訊處, 業務員]`
+6. 查詢只用 `organizationMetrics(prefix)` 讀取該路徑的單一組織 KPI；類別篩選、職域數、月份切換不會改變這兩項數據。由父層累加的是**組織子路徑**，不是各職域列。
+
+**當前 DEMO 來源快照總計：組數 156、新人數 211**。各中心：北一 29／45、北二 27／25、桃竹 22／34、中嘉 33／49、台南 19／24、高屏 26／34。上層與下層加總須一致。因為是模擬值，正式資料串接後應由組織人事／編制資料表替換，不應和 K/L/N 業績表相混。
+
+**表格渲染契約**：欄位順序為「區域中心（或當層名稱）→ 組數 → 新人數 → 職域 → 職域 KPI」。組數／新人數各僅一個數字，和組織名稱同樣以 `rowSpan=職域分類數+1` 跨列，通路總計亦只顯示一次。這兩欄仍由指標顯示／隱藏的 `VISIBLE` Set 控制；隱藏後不能留下空白占位格。
 
 ### 4.4 經營人員數、達標人員數、實動率
 
