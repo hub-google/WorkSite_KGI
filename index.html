@@ -271,7 +271,7 @@ function renderMetricDetail(){
 }
 
 // Default table columns: preserve prior metric order, only hide overall FYC/FYN/premium.
-const VISIBLE=new Set(['worksites','operators','achievedOperators','activityRate','fyc','fyn','premium']);
+const VISIBLE=new Set(['teamCount','newcomers','worksites','operators','achievedOperators','activityRate','fyc','fyn','premium']);
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
 const byId=id=>document.getElementById(id);
 // Use the current calendar month in Taiwan, never December by default.
@@ -368,6 +368,17 @@ function sum(items,yearOffset=0){
  const years=[];for(let year=Number(a.slice(0,4));year<=Number(b.slice(0,4));year++)years.push(String(year));
  if(!actualReady||years.some(year=>!actualManifest.audit[year]))return result;
  result.fyc=0;result.fyn=0;result.premium=0;result.totalFyc=0;
+ // Assign reproducible demo group/newcomer values at the individual
+ // agent+worksite-category leaf, NEVER at an aggregate or a subtotal.
+ // Summing the same leaves across every hierarchy makes every category,
+ // organization subtotal, and grand total reconcile exactly.
+ result.teamCount=0;result.newcomers=0;
+ for(const item of items){
+  if(!item.rows?.some(entry=>inWorkMonthRange(entry.month,a,b)))continue;
+  const leafKey=JSON.stringify([...item.path,item.domain]);
+  result.teamCount+=(hash('demo-team-v1|'+leafKey)%9===0?1:0);
+  result.newcomers+=(hash('demo-newcomer-v1|'+leafKey)%7===0?1:0);
+ }
  if(worksiteReady){
   const distinct=new Map();
   for(const item of items)if(item.siteIds)for(const siteId of item.siteIds)distinct.set(siteId,item.domain);
@@ -503,7 +514,7 @@ function orderedGlobalDomains(){
  if(!actualReady)return DOMAINS.slice();
  if(!globalDomainOrder){
   const sums=new Map(DOMAINS.map(domain=>[domain,0]));
-  forEachActualRow(entries,yyyy+'-01-01',yyyy+'-12-31',(item,row)=>{
+  forEachActualRow(entries,taipeiYear+'01',currentMonth,(item,row)=>{
    if(sums.has(item.domain))sums.set(item.domain,sums.get(item.domain)+(Number(row[2])||0));
   });
   globalDomainOrder=DOMAINS.slice().sort((a,b)=>(sums.get(b)||0)-(sums.get(a)||0)||a.localeCompare(b,'zh-TW'));
