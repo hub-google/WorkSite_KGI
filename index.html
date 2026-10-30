@@ -563,7 +563,7 @@ function renderDashboard(items,showYoY){
     const h=document.createElement('h3'),pill=document.createElement('span');
     pill.className='ring-kpi';pill.textContent=period.label+field.name;h.append(pill);
     const whole=document.createElement('span');whole.className='ring-total';
-    whole.textContent=period.label+field.name+'：'+(known?compact(totalValue)+'（模擬）':'—');
+    whole.textContent='整體'+field.name+'：'+(known?compact(totalValue)+'（模擬）':'—');
     const subtotal=document.createElement('span');subtotal.className='ring-total ring-workplace-total';
     subtotal.textContent='職域'+field.name+'合計：'+compact(workplace);
     const dates=document.createElement('span');dates.className='ring-period';
