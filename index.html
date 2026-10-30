@@ -124,16 +124,14 @@
 .policy-reconcile{font-size:12px;color:#40718d;margin:12px 0 0}
 @media(max-width:550px){.policy-controls .policy-count{width:100%;margin-left:0}.policy-table th,.policy-table td{padding:10px 8px}}
 
-/* Compact chart without external callouts: fixed legend rows prevent overlapping text. */
-#dashboardGrid .ring-svg{max-width:345px;display:block;margin:3px auto 0}
-.ring-legend{display:grid;gap:0;border-top:1px solid #e5edf3;margin:0 10px 5px}
-.ring-legend-row{display:grid;grid-template-columns:11px minmax(0,1fr) auto 56px;column-gap:9px;align-items:center;padding:10px 3px;min-width:0}
-.ring-legend-row+.ring-legend-row{border-top:1px dashed #e9edf2}
-.ring-legend-swatch{display:block;width:10px;height:10px;border-radius:3px}
-.ring-legend-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:650;color:#30475f}
-.ring-legend-amount{white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums;color:#4b657c;text-align:right}
-.ring-legend-share{white-space:nowrap;text-align:right;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#42617b}
-@media(max-width:480px){.ring-legend{margin-inline:4px}.ring-legend-row{grid-template-columns:10px minmax(0,1fr) auto 47px;column-gap:6px}.ring-legend-name{font-size:12px}.ring-legend-amount,.ring-legend-share{font-size:11px}}
+/* Large, directly labeled donut chart; no separate legend block. */
+#dashboardGrid .ring-card{padding:15px 8px 10px}
+#dashboardGrid .ring-svg{width:100%;max-width:730px;height:auto;display:block;margin:5px auto 0;overflow:visible}
+#dashboardGrid .pie-card .ring-heading{gap:5px}
+@media(max-width:730px){
+ #dashboardGrid .ring-card{padding:12px 3px 10px}
+ #dashboardGrid .ring-svg{max-width:730px}
+}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -147,7 +145,7 @@
 })();
 </script></head><body>
 <div class="closecover" id="cover"></div><aside class="sidebar" id="sidebar"><div class="brand"><span>W</span>職域經營平台</div><div class="navhint">功能選單</div><button class="nav" data-view="最新消息">◉　最新消息</button><button class="nav" data-view="經營資源">▤　經營資源</button><button class="nav" data-view="達人經驗談">✦　達人經驗談</button><button class="nav active" data-view="績效管理">▥　績效管理</button><button class="nav" data-view="職域新增、調整、刪除回報">✎　職域新增、調整、刪除回報</button><div class="navhint"></div></aside>
-<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 職域業績採真實資料／整體業績為模擬</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span><span class="period" id="realDataStatus">載入 2025／2026 真實職域資料中…</span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">比較今年與去年同期：職域真實業績與整體模擬業績的組成</p></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">職域FYC／FYN／保費來自 2025、2026 Excel（僅 AQ＝1），以工作月統計、依 D～G 組織彙總。有效職域數依「所有職域資料.xlsx」B 欄做 COUNT DISTINCT，限定 U=Y（在職），且 I/J/K/R 組織與業務員資訊完整；未分派及非在職列不計入。A 欄依對照表轉中文，未對照的 08 類別從畫面與統計排除。達標職域數按有效職域代碼穩定隨機模擬，各類別機率 30%～90%，非實際達標資料；職域數及達標職域數均為名冊快照，不受業績日期影響。整體FYC按真實職域FYC逐筆套用固定 3～6 倍隨機係數彙總（模擬）；整體FYN／保費仍暫採職域業績×5估算（模擬），三項職域占比均由整體模擬值計算。圓環圖依分類數值降冪排序，「其他」固定最後。其他沒有來源的指標顯示「—」，不是 0。「經營人員數」僅代表本資料中出現的去重業務員；實動率為其中淨 FYN &gt; 0 人數占比，不代表完整在職名冊。手機可左右滑動查看欄位。</div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料依 Excel 來源列的商品別／繳別／年期／商品名稱分類加總，包含可能的負向沖銷，總計與統計表一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處以 2025／2026 Excel 原始列且 AQ=1 統計，工作月取 C 欄，保單號碼僅顯示 J 欄最後四碼；一張保單可能有多筆業績。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
+<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39｜圖表版 2026-10-30</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 職域業績採真實資料／整體業績為模擬</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始日期</label><input type="date" id="start"></div><div class="field"><label for="end">結束日期</label><input type="date" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span><span class="period" id="realDataStatus">載入 2025／2026 真實職域資料中…</span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong><p id="dashboardDescription">比較今年與去年同期：職域真實業績與整體模擬業績的組成</p></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div><div class="endnote">職域FYC／FYN／保費來自 2025、2026 Excel（僅 AQ＝1），以工作月統計、依 D～G 組織彙總。有效職域數依「所有職域資料.xlsx」B 欄做 COUNT DISTINCT，限定 U=Y（在職），且 I/J/K/R 組織與業務員資訊完整；未分派及非在職列不計入。A 欄依對照表轉中文，未對照的 08 類別從畫面與統計排除。達標職域數按有效職域代碼穩定隨機模擬，各類別機率 30%～90%，非實際達標資料；職域數及達標職域數均為名冊快照，不受業績日期影響。整體FYC按真實職域FYC逐筆套用固定 3～6 倍隨機係數彙總（模擬）；整體FYN／保費仍暫採職域業績×5估算（模擬），三項職域占比均由整體模擬值計算。圓環圖依分類數值降冪排序，「其他」固定最後。其他沒有來源的指標顯示「—」，不是 0。「經營人員數」僅代表本資料中出現的去重業務員；實動率為其中淨 FYN &gt; 0 人數占比，不代表完整在職名冊。手機可左右滑動查看欄位。</div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料依 Excel 來源列的商品別／繳別／年期／商品名稱分類加總，包含可能的負向沖銷，總計與統計表一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處以 2025／2026 Excel 原始列且 AQ=1 統計，工作月取 C 欄，保單號碼僅顯示 J 欄最後四碼；一張保單可能有多筆業績。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▤</div><span class="resource-tag">活動補助 · DEMO</span><h2>客說會補助申請</h2><p>辦理職域客戶說明會時，快速了解活動補助申請方式、準備資料與核銷流程。</p><details><summary>查看示範流程 ▾</summary><ol><li>填寫活動名稱、日期、地點與預估人數。</li><li>準備活動規劃與預算資料。</li><li>提交主管審核後，依規定辦理核銷。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▣</div><span class="resource-tag">行政服務 · DEMO</span><h2>識別證補發</h2><p>協助駐廠或職域服務人員查詢識別證遺失、損壞及補發所需的申請步驟。</p><details><summary>查看示範流程 ▾</summary><ol><li>選擇遺失、毀損或資料異動原因。</li><li>準備申請人與服務據點基本資料。</li><li>送出補發申請並等待窗口通知領取。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▢</div><span class="resource-tag">客戶經營 · DEMO</span><h2>LINE客戶預約活動</h2><p>示範如何透過 LINE 邀請職域客戶預約諮詢、講座或定期服務活動。</p><details><summary>查看示範流程 ▾</summary><ol><li>設定活動主題、時段及可預約名額。</li><li>透過 LINE 分享預約資訊給客戶。</li><li>確認預約名單並安排活動提醒。</li></ol></details></article>
@@ -571,13 +569,14 @@ function renderDashboard(items,showYoY){
     const dates=document.createElement('span');dates.className='ring-period';
     dates.textContent=period.offset===0?start+' ～ '+end:shiftYear(start,-1)+' ～ '+shiftYear(end,-1);
     top.append(h,whole,subtotal,dates);card.append(top);
-    // Keep labels out of the pie itself: each slice gets a fixed, readable legend row.
-    const cx=180,cy=145,outer=101,inner=62,tau=2*Math.PI;
-    const svg=node('svg',{viewBox:'0 0 360 290',class:'pie-svg ring-svg',role:'img',
+    // Large donut with all category names, amounts and shares on the chart.
+    // Worksite categories are ordered by amount; the residual "Other" is always last.
+    const cx=352,cy=278,outer=157,inner=102,tau=2*Math.PI;
+    const svg=node('svg',{viewBox:'0 0 730 555',class:'pie-svg ring-svg ring-labeled',role:'img',
      'aria-label':period.label+field.name+'：職域合計'+fmt(workplace)+'，佔整體'+
-     (ratio===null?'無資料':fmtFixed(ratio,1)+'%')});
+     (ratio===null?'無資料':fmtFixed(ratio,1)+'%')+'；'+portions.map(p=>p.label+' '+compact(p.value)).join('、')});
     svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:'#e8edf2','stroke-width':outer-inner}));
-    const ringPoint=(r,a)=>xy(cx,cy,r,a);
+    const ringPoint=(r,angle)=>xy(cx,cy,r,angle);
     const arc=(a,b)=>{
      const p=ringPoint(outer,a),q=ringPoint(outer,b);
      const v=ringPoint(inner,b),w=ringPoint(inner,a);
@@ -585,34 +584,54 @@ function renderDashboard(items,showYoY){
      return 'M '+p.x+' '+p.y+' A '+outer+' '+outer+' 0 '+large+' 1 '+q.x+' '+q.y+
       ' L '+v.x+' '+v.y+' A '+inner+' '+inner+' 0 '+large+' 0 '+w.x+' '+w.y+' Z';
     };
+    const angleByLabel=new Map();
     let angle=-Math.PI/2;
     for(const part of positive){
-     const share=ringTotal?part.value/ringTotal:0,sweep=tau*share;
+     const share=ringTotal?part.value/ringTotal:0,sweep=tau*share,mid=angle+sweep/2;
+     angleByLabel.set(part.label,mid);
      if(share>=0.999999){
       svg.append(node('circle',{cx,cy,r:(outer+inner)/2,fill:'none',stroke:part.color,'stroke-width':outer-inner}));
      }else if(sweep>0){
-      svg.append(node('path',{d:arc(angle,angle+sweep),fill:part.color,stroke:'#fff','stroke-width':1.25}));
+      svg.append(node('path',{d:arc(angle,angle+sweep),fill:part.color,stroke:'#fff','stroke-width':1.4}));
      }
      angle+=sweep;
     }
-    svg.append(node('text',{x:cx,y:cy-17,'text-anchor':'middle','font-size':14,'font-weight':700,fill:'#69849c'},'職域佔整體'));
-    const number=node('text',{x:cx,y:cy+29,'text-anchor':'middle','font-size':47,'font-weight':850,fill:'#4e8fdb'});
+    svg.append(node('text',{x:cx,y:cy-13,'text-anchor':'middle','font-size':19,'font-weight':700,fill:'#6b8297'},'職域佔整體'));
+    const number=node('text',{x:cx,y:cy+39,'text-anchor':'middle','font-size':56,'font-weight':850,fill:'#4e8fdb'});
     number.append(node('tspan',{},ratio===null?'—':fmtFixed(ratio,1)));
-    if(ratio!==null)number.append(node('tspan',{'font-size':23},'%'));
+    if(ratio!==null)number.append(node('tspan',{'font-size':26},'%'));
     svg.append(number);
-    card.append(svg);
-    const legend=document.createElement('div');legend.className='ring-legend';
-    for(const part of portions){
-     const row=document.createElement('div');row.className='ring-legend-row';
-     const swatch=document.createElement('span');swatch.className='ring-legend-swatch';swatch.style.backgroundColor=part.color;
-     const label=document.createElement('span');label.className='ring-legend-name';label.textContent=part.label;label.title=part.label;
-     const amount=document.createElement('span');amount.className='ring-legend-amount';
-     amount.textContent=compact(part.value);amount.title=fmt(part.value)+'（原始單位）';
-     const share=document.createElement('span');share.className='ring-legend-share';
-     share.textContent=known&&totalValue?fmtFixed(part.value/totalValue*100,1)+'%':'—';
-     row.append(swatch,label,amount,share);legend.append(row);
+    // Reserve independent lanes: all ranked worksite labels on the right and
+    // the "Other" remainder at lower left, so labels never overlap the donut.
+    const worksiteLabels=portions.filter(p=>!p.label.startsWith('其他'));
+    const otherLabel=portions.find(p=>p.label.startsWith('其他'));
+    const labels=worksiteLabels.map((p,i)=>({
+      ...p,side:'right',y:worksiteLabels.length<2?205:95+(i*365)/(worksiteLabels.length-1)
+    }));
+    if(otherLabel)labels.push({...otherLabel,side:'left',y:454});
+    for(const part of labels){
+     const right=part.side==='right',tx=right?541:9;
+     const anchor=right?'start':'start';
+     const mid=angleByLabel.get(part.label);
+     if(mid!==undefined){
+      const origin=ringPoint(outer+5,mid),turnX=right?521:180,endX=right?534:172;
+      const targetY=part.y-4;
+      svg.append(node('path',{d:'M '+origin.x.toFixed(2)+' '+origin.y.toFixed(2)+
+       ' L '+turnX+' '+targetY+' L '+endX+' '+targetY,
+       fill:'none',stroke:part.color,'stroke-width':1.9,'stroke-opacity':0.76}));
+      svg.append(node('circle',{cx:origin.x,cy:origin.y,r:3.5,fill:part.color}));
+     }
+     svg.append(node('rect',{x:tx,y:part.y-21,width:9,height:9,rx:2,fill:part.color}));
+     const title=node('text',{x:tx+16,y:part.y-9,'text-anchor':anchor,'font-size':19,
+      'font-weight':750,fill:'#29465f'},part.label);
+     svg.append(title);
+     const detail=node('text',{x:tx+16,y:part.y+17,'text-anchor':anchor,'font-size':16,
+      'font-weight':650,fill:'#546b80'},
+      compact(part.value)+' · '+(known&&totalValue?fmtFixed(part.value/totalValue*100,1)+'%':'—'));
+     svg.append(detail);
     }
-    card.append(legend);
+    if(!ringTotal)svg.append(node('text',{x:cx,y:cy+80,'text-anchor':'middle','font-size':16,fill:'#8799a8'},'此期間沒有業績資料'));
+    card.append(svg);
     root.append(card);
    }
   }
@@ -627,12 +646,16 @@ function renderDashboard(items,showYoY){
   const overallNumber=document.createElement('strong');overallNumber.textContent=growthText(aggregateGrowth);
   const overallLabel=document.createElement('span');overallLabel.textContent='整體年成長';
   overall.append(overallNumber,overallLabel);barHeading.append(headingName,overall);barCard.append(barHeading);
-  for(let i=0;i<DOMAINS.length;i++){
+  // Sort each comparison card by THIS YEAR's real KPI, not by the source catalog.
+  // Keep the matching prior-year value and rate paired with its category.
+  const yoyOrder=DOMAINS.map((domain,i)=>({domain,i,current:now[i]}))
+   .sort((a,b)=>(Number(b.current)||0)-(Number(a.current)||0)||a.domain.localeCompare(b.domain,'zh-TW'));
+  for(const {domain,i} of yoyOrder){
    const group=document.createElement('div');group.className='yoy-domain';
    const groupHeader=document.createElement('div');groupHeader.className='yoy-domain-title';
-   const name=document.createElement('strong');name.textContent=DOMAINS[i];
+   const name=document.createElement('strong');name.textContent=domain;
    const rate=growth(now[i],last[i]),chip=document.createElement('b');chip.className='growth-chip '+growthClass(rate);chip.textContent=growthText(rate);
-   chip.setAttribute('aria-label',DOMAINS[i]+'年成長率'+growthText(rate));
+   chip.setAttribute('aria-label',domain+'年成長率'+growthText(rate));
    groupHeader.append(name,chip);group.append(groupHeader);
    for(const info of [{text:'去年',value:last[i],kind:'previous'},{text:'今年',value:now[i],kind:'current'}]){
     const row=document.createElement('div');row.className='yoy-bar-row';
