@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>業務員是否達標｜實機回歸測試</title>
+<style>body{font:15px/1.6 system-ui,"Noto Sans TC",sans-serif;color:#1d334b;background:#f4f7fb;max-width:960px;margin:25px auto;padding:18px}h1{font-size:22px}#status{font-weight:bold}pre{background:white;border:1px solid #d9e2eb;border-radius:10px;padding:20px;white-space:pre-wrap;overflow-wrap:break-word}iframe{position:absolute;left:-2000px;top:0;width:1350px;height:900px;border:0}</style></head>
+<body><h1>業務員層「是否達標」實機回歸測試</h1><p>透過同網域的真實績效頁執行三層下鑽、欄名、O/X、欄位選單、提示及返回上一層測試。</p><p id="status">載入中…</p><pre id="result">正在執行驗證…</pre>
+<iframe id="app" title="績效管理測試頁面" src="/WorkSite_KGI/performance/?deep_qa=79356ec0"></iframe>
+<script>
+(async()=>{
+ const results=[],fails=[];
+ const info=(name,pass,detail)=>{results.push((pass?'PASS ':'FAIL ')+name+'｜'+detail);if(!pass)fails.push(name);document.getElementById('result').textContent=results.join('\n')};
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ async function until(fn,time=65000){const begin=Date.now();while(Date.now()-begin<time){try{const v=fn();if(v)return v}catch(e){}await sleep(250)}throw Error('等候逾時：'+fn.toString().slice(0,100))}
+ try{
+  const frame=document.getElementById('app'),doc=()=>frame.contentDocument;
+  await until(()=>{const d=doc();return d&&d.querySelector('#tbody .orglink')&&d.querySelector('#realDataStatus')?.hidden===true});
+  const headings=()=>[...doc().querySelectorAll('#thead th')].map(x=>x.innerText.replace(/\s+/g,'').trim());
+  const firstHead=headings();
+  info('根層仍顯示達標經營人員數',firstHead.some(x=>x.includes('達標經營人員數'))&&!firstHead.some(x=>x.includes('是否達標')),firstHead.join(' / '));
+  let route=[];
+  for(let depth=0;depth<3;depth++){
+   const before=doc().querySelector('#tbody .orglink');
+   if(!before)throw Error('第'+depth+'層找不到可下鑽組織');
+   const name=before.textContent.trim();
+   before.click();
+   route.push(name);
+   await until(()=>headings()[0].includes(['業務區','通訊處','業務員'][depth]));
+   info('下鑽第'+(depth+1)+'層',true,name+' → '+headings()[0]);
+  }
+  const agentHeader=headings();
+  info('業務員表頭是否達標',agentHeader.some(x=>x.includes('是否達標'))&&!agentHeader.some(x=>x.includes('達標經營人員數')),agentHeader.join(' / '));
+  const cols=[...doc().querySelectorAll('#tbody td[aria-label="達標"],#tbody td[aria-label="未達標"],#tbody td[aria-label="不適用"]')];
+  const vals=cols.map(el=>el.textContent.trim());
+  const rawStatusOkay=cols.length>0&&cols.every(el=>{
+   const status=el.getAttribute('aria-label');
+   return status==='達標'?el.textContent==='O':status==='未達標'?el.textContent==='X':el.textContent==='—';
+  });
+  info('業務員 O/X 映射',rawStatusOkay,'共'+cols.length+'個狀態；'+JSON.stringify(vals.slice(0,36)));
+  const success=cols.filter(el=>el.textContent==='O').length,miss=cols.filter(el=>el.textContent==='X').length,skip=cols.filter(el=>el.textContent==='—').length;
+  info('個別業務員 O/X 統計',success+miss>0,'O '+success+'／X '+miss+'／— '+skip);
+  const totalRows=[...doc().querySelectorAll('#tbody tr.grand-group,#tbody tr.total')];
+  const totalStatus=totalRows.map(tr=>tr.querySelector('td[aria-label="不適用"]')?.textContent?.trim());
+  info('非個人總計不用 O/X',totalRows.length>0&&totalStatus.every(x=>x==='—'),'總計/類別總計共'+totalRows.length+'列；'+totalStatus.join(','));
+  const target=doc().querySelector('button.target-trigger[aria-label*="是否達標"]');
+  info('標題浮動提示名稱',!!target,target?.getAttribute('aria-label')||'找不到');
+  if(target){
+   target.click();
+   const tip=target.closest('.target-help')?.querySelector('.target-tooltip')?.textContent||'';
+   info('提示文字 O/X 意義',tip.includes('O＝達標')&&tip.includes('X＝未達標'),tip.slice(0,180));
+   target.click();
+  }
+  const label=doc().querySelector('#metricChecks label[data-metric-key="achievedOperators"]');
+  const mirror=doc().querySelector('#dashboardMetricChecks label[data-metric-key="achievedOperators"]');
+  info('兩處欄位選單使用「是否達標」',label?.textContent?.includes('是否達標')&&mirror?.textContent?.includes('是否達標'),(label?.textContent||'無')+' / '+(mirror?.textContent||'無'));
+  if(label){
+   const checkbox=label.querySelector('input[type="checkbox"]');
+   checkbox.click();
+   info('關閉是否達標欄位',!headings().some(x=>x.includes('是否達標'))&&!checkbox.checked,headings().join(' / '));
+   checkbox.click();
+   info('重新開啟是否達標欄位',headings().some(x=>x.includes('是否達標'))&&checkbox.checked,headings().join(' / '));
+  }
+  const breadcrumbs=[...doc().querySelectorAll('#crumb button')];
+  if(breadcrumbs.length<2)throw Error('麵包屑按鈕不足');
+  breadcrumbs[breadcrumbs.length-2].click();
+  const backHeads=headings();
+  info('上一層恢復達標經營人員數',backHeads.some(x=>x.includes('達標經營人員數'))&&!backHeads.some(x=>x.includes('是否達標')),backHeads.join(' / '));
+  const otherLabel=doc().querySelector('#metricChecks label[data-metric-key="achievedOperators"]')?.textContent||'';
+  info('上一層欄位選單名稱恢復',otherLabel.includes('達標經營人員數'),otherLabel);
+  info('真實導覽路徑',true,route.join(' → '));
+ }catch(e){
+  info('測試執行發生例外',false,String(e?.stack||e));
+ }
+ const status=document.getElementById('status');status.textContent=fails.length?'FAIL（'+fails.length+'項未通過）':'PASS（全部通過）';status.dataset.result=fails.length?'fail':'pass';
+ document.getElementById('result').textContent=results.join('\n');
+})();
+</script></body></html>
