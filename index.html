@@ -367,14 +367,15 @@ function sum(items,yearOffset=0){
   result.premium+=Number(row[4])||0;
  });
  result.operators=people.size;
- // Stable 50%-90% demo target based on distinct agents in this exact row scope.
- // A per-row random share is used to keep even filtered subgroups within bounds.
- let agentFingerprint=0;
- for(const personId of people.keys())agentFingerprint=(agentFingerprint+hash('agent-fingerprint:'+personId))>>>0;
- const agentRate=50+(hash('achieved-operators-v1|'+a+'|'+b+'|'+agentFingerprint+'|'+people.size)%41);
- const agentFloor=Math.ceil(people.size*0.5),agentCeiling=Math.floor(people.size*0.9);
- result.achievedOperators=people.size===0?0:
-  Math.max(agentFloor,Math.min(Math.max(agentFloor,agentCeiling),Math.round(people.size*agentRate/100)));
+ // Each distinct agent has ONE reproducible 50%-90% success probability.
+ // Its outcome is stable across categories, organizational levels and periods.
+ // Therefore subtotal and grand total cannot have fewer achieved agents than
+ // any of their constituent subsets, unlike an independently randomized row.
+ result.achievedOperators=0;
+ for(const personId of people.keys()){
+  const chance=50+(hash('agent-achievement-rate-v2|'+personId)%41);
+  if(hash('agent-achievement-outcome-v2|'+personId)%10000<chance*100)result.achievedOperators++;
+ }
  const positive=[...people.values()].filter(v=>v>0).length;
  result.activityRate=people.size?Math.round(positive/people.size*1000)/10:0;
  // FYC overall is already computed additively from source rows using 3-6x.
@@ -543,7 +544,7 @@ function targetHelp(key='active'){
  const tooltip=document.createElement('span');tooltip.className='target-tooltip';tooltip.setAttribute('role','tooltip');
  const title=document.createElement('strong');title.textContent=label+'計算說明';tooltip.append(title);
  if(isAgent){
-  const note=document.createElement('small');note.textContent='由各列去重經營人員數，以固定隨機 50%～90% 比率估算達標人數；同一統計條件數值固定，非實際考核結果。人數極少時受整數限制。';tooltip.append(note);
+  const note=document.createElement('small');note.textContent='每位經營人員的固定隨機達標機率介於 50%～90%；同一人跨職域、組織層級只認列一次，確保小計與總計一致。非實際考核結果，樣本少時比例可能偏離此區間。';tooltip.append(note);
  }else{
   for(const [name,target] of TARGETS){const line=document.createElement('span');line.textContent=name+'：'+(target||'尚未設定');tooltip.append(line)}
   const note=document.createElement('small');note.textContent='依有效職域數，以各類別固定隨機 30%～90% 比率估算；同一 B 代碼只算一次。';tooltip.append(note);
