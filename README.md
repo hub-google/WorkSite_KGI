@@ -36,6 +36,10 @@
 
 **注意：GitHub Pages 與其 data 檔案為公開可讀。沒有登入驗證、資料庫／API、RBAC 或審核流程。不可直接當成正式含機敏資訊的公司系統。**
 
+## 組織模擬名冊（2026-10-30 擴充）
+
+組數由原本 **156** 增加到 **1,560**，新人數由 **211** 增加到 **1,055**。模擬名冊 [data/organization-metrics.json](data/organization-metrics.json) 在每位去重業務員層級以 0/1 分別認列，**不是**把每個人原有數值直接乘 10／5。原本算組數或新人的人員保留，其餘從尚未被計入的人員依固定 hash 加入；組數、新人數均按組織層級往上加總，不按職域分配。可執行 `node scripts/generate-organization-metrics.mjs` 重建相同名冊，詳見 [資料契約](docs/DATA_CONTRACT.md)。
+
 ## 本機預覽
 
 本專案以 /WorkSite_KGI/ 作為 project base path，本機預覽必須維持相同路徑：
