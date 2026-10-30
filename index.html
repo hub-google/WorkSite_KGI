@@ -441,12 +441,22 @@ function shiftYear(month,delta){
  if(!delta)return month;
  return String(Number(month.slice(0,4))+delta).padStart(4,'0')+month.slice(4,6);
 }
+// 整體業績為模擬：三項指標依來源年／月各自生成固定的 18%～28% 職域占率。
+ // 年度基準落於 19%～27%，每月微幅浮動 ±0.75 個百分點。
+ // 不使用每次刷新都會改變的 Math.random；所有組織、期間能從來源列加總對帳。
+function simulatedOverallMultiplier(metric,month){
+ const year=month.slice(0,4);
+ const annualShare=19+(hash('overall-share-v3|'+metric+'|'+year)%801)/100;
+ const monthlyJitter=((hash('overall-jitter-v3|'+metric+'|'+month)%151)-75)/100;
+ return 100/(annualShare+monthlyJitter);
+}
 function sum(items,yearOffset=0){
  const result=Object.fromEntries(METRICS.map(([k])=>[k,null]));
  const a=shiftYear(start,yearOffset),b=shiftYear(end,yearOffset);
  const years=[];for(let year=Number(a.slice(0,4));year<=Number(b.slice(0,4));year++)years.push(String(year));
  if(!actualReady||years.some(year=>!actualManifest.audit[year]))return result;
- result.fyc=0;result.fyn=0;result.premium=0;result.totalFyc=0;
+ result.fyc=0;result.fyn=0;result.premium=0;
+ result.totalFyc=0;result.totalFyn=0;result.totalPremium=0;
  // Organization-level team/newcomer figures are NOT workplace-domain metrics.
  // They live in organizationMetricTotals and are rendered once per organization.
  // sum(items) deliberately leaves both null so category rows never report them.
@@ -469,14 +479,14 @@ function sum(items,yearOffset=0){
   people.set(id,(people.get(id)||0)+(Number(row[3])||0));
   const rawFyc=Number(row[2])||0;
   result.fyc+=rawFyc;
-  // Each real worksite FYC record receives a deterministic random multiplier
-  // in [3,6]. Calculating at the source-row level makes the simulated overall
-  // FYC exactly reconcile across organizations, periods, and category filters.
-  const fycSeed='overall-fyc-v2|'+item.seed+'|'+month+'|'+String(row[9]??'')+'|'+String(row[7]??'');
-  const fycMultiplier=3+(hash(fycSeed)%30001)/10000;
-  result.totalFyc+=Math.round(rawFyc*fycMultiplier);
-  result.fyn+=Number(row[3])||0;
-  result.premium+=Number(row[4])||0;
+  const rawFyn=Number(row[3])||0,rawPremium=Number(row[4])||0;
+  result.fyn+=rawFyn;
+  result.premium+=rawPremium;
+  // 三種整體指標各自模擬，依年度／月份浮動但相同來源列永遠得到相同數字。
+  // 在來源列累加，確保通路總計 = 各組織／職域小計，且同比可獨立重算。
+  result.totalFyc+=Math.round(rawFyc*simulatedOverallMultiplier('fyc',month));
+  result.totalFyn+=rawFyn*simulatedOverallMultiplier('fyn',month);
+  result.totalPremium+=Math.round(rawPremium*simulatedOverallMultiplier('premium',month));
  });
  result.operators=people.size;
  // Each distinct agent has ONE reproducible 50%-90% success probability.
@@ -490,11 +500,8 @@ function sum(items,yearOffset=0){
  }
  const positive=[...people.values()].filter(v=>v>0).length;
  result.activityRate=people.size?Math.round(positive/people.size*1000)/10:0;
- // FYC overall is already computed additively from source rows using 3-6x.
- // FYN and premium retain the previously requested 5x demo assumption.
- // All three simulated whole-channel values are explicitly not real data.
- result.totalFyn=Math.round(result.fyn*5*10000)/10000;
- result.totalPremium=Math.round(result.premium*5*10000)/10000;
+ // 模擬整體 FYC/FYN/保費皆於來源列累計完成；此處不可再套固定倍率。
+ // 三項整體指標均非真實通路業績。
  // Category shares need a parent-organization denominator. They are computed
  // when table rows are rendered; leave aggregate sum() shares undefined here.
  // Other missing KPIs remain null until matching sources become available.
