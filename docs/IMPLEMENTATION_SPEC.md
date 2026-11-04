@@ -298,3 +298,9 @@ YOY 卡包含百分比 chip、去年灰色長條與今年藍色長條；空值�
 - `path.length===3` 為通訊處底下「業務員清單」；按姓名後 `path.length===4` 為「業務員個人」。個人頁僅保留該員的四類職域（按篩選）與一個小計，不再額外輸出重複的通路總計；個人頁保單明細直接限制該人。
 - 表格每列取 `values.worksites===0` 為零值顯示條件，對職域數及後續顯示指標的數值 0 繪製「—」；實際統計值不修改，缺值仍獨立顯示「—」。業務員 0 達標狀態也服從此規則。
 - 載入 manifest 後以 `m.shards` 取 `latestSourceMonth` 並限制日期選擇上界；2026-11-04 的資料只到 `202610`，因此預設同比是 202601–202610 對 202501–202510。
+
+
+### 2026-11-04 補充：同期成長率欄位與預設隱藏
+- `METRICS` 按 `fyc → priorFyc → priorFycGrowth`、`fyn → priorFyn → priorFynGrowth`、`premium → priorPremium → priorPremiumGrowth` 排列；文字為「去年同期FYC成長率」等三欄。
+- `VISIBLE` 初始集合不含 `priorFyc`、`priorFyn`、`priorPremium` 及三個 `prior*Growth`；兩處「顯示／隱藏指標」共用同一狀態。
+- `YOY_GROWTH_METRICS` 對應來源的 `fyc/fyn/premium`；`growthRate(current, previous)` 在缺值或去年為 0 時回傳 null。表格格式帶 % 及正負號，`metricForOrganization` 對個別成長率排序，避免以本年值排序錯欄。
