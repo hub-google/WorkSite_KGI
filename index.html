@@ -633,9 +633,9 @@ function orderedGlobalDomains(){
 function filterScopeKey(){return path.join('|')}
 function availableOrganizations(items){return [...new Set(items.map(item=>item.path[path.length]))].sort(compareOrganizationNames)}
 function filteredItems(){
- const source=entries.filter(prefixMatches),options=availableOrganizations(source);
+ const source=entries.filter(prefixMatches),options=path.length===4?[path[3]]:availableOrganizations(source);
  const selected=organizationFilters.get(filterScopeKey()),domains=domainFilters.get(filterScopeKey());
- const orgItems=selected?source.filter(x=>selected.has(x.path[path.length])):source;
+ const orgItems=path.length===4?source:selected?source.filter(x=>selected.has(x.path[path.length])):source;
  return {source,options,organizationItems:orgItems,items:domains?orgItems.filter(x=>domains.has(x.domain)):orgItems};
 }
 function setFilterSelection(names){
@@ -674,15 +674,15 @@ function toggleSort(key){
 function sortedOrganizations(names,matching){
  if(!sortMetric)return [...names].sort(compareOrganizationNames);
  const totals=new Map(names.map(name=>[name,ORGANIZATION_METRICS.has(sortMetric)
-  ?organizationMetrics([...path,name])[sortMetric]
-  :sum(matching.filter(item=>item.path[path.length]===name))[sortMetric]]));
+  ?organizationMetrics(path.length===4?path:[...path,name])[sortMetric]
+  :sum(matching.filter(item=>childName(item)===name),PRIOR_YEAR_METRICS[sortMetric]?-1:0)[PRIOR_YEAR_METRICS[sortMetric]||sortMetric]]));
  return [...names].sort((a,b)=>{
   const difference=(totals.get(a)-totals.get(b))*(sortDirection==='desc'?-1:1);
   return difference||a.localeCompare(b,'zh-TW');
  });
 }
 
-function childName(e){return e.path[path.length]}
+function childName(e){return path.length===4?e.path[3]:e.path[path.length]}
 function prefixMatches(e){return path.every((s,i)=>e.path[i]===s)}
 
 const DOMAIN_COLOR_BY_NAME={'闔家安康':'#ed8b2c','台積電':'#ef6c79','醫護公會':'#119b87','駐廠職域':'#2463c5'};
@@ -878,10 +878,12 @@ function renderDashboard(items,showYoY){
 }
 function render(){
  const level=path.length,{options,organizationItems,items:matching}=filteredItems();
- byId('policyDetailBtn').hidden=level!==3;
+ byId('policyDetailBtn').hidden=level<3;
  // Move the filter outside the old table header before rebuilding it.
  const filterHost=byId('orgFilterRoot'),domainFilterHost=byId('domainFilterRoot');
  document.querySelector('.head-actions').prepend(filterHost,domainFilterHost);
+ filterHost.style.display=level===4?'none':'';
+ if(level===4)byId('orgFilterMenu').hidden=true;
  renderOrganizationFilter(options);
  renderDomainFilter();
  byId('summaryDashboard').hidden=false;
@@ -893,7 +895,7 @@ function render(){
  LEVELS.slice(0,level+1).forEach((name,i)=>{if(i){const sep=document.createElement('span');sep.textContent='›';crumb.append(sep)}const b=document.createElement('button');b.textContent=i===0?'通路總計':path[i-1];b.disabled=i===level;b.onclick=()=>{path=path.slice(0,i);render()};crumb.append(b)});
  // Salesperson level is a single-person boolean, not an aggregate headcount.
  // The underlying achievedOperators metric and all higher levels stay numeric.
- const displayMetricLabel=(key,label)=>level===3&&key==='achievedOperators'?'是否達標':label;
+ const displayMetricLabel=(key,label)=>level>=3&&key==='achievedOperators'?'是否達標':label;
  for(const option of document.querySelectorAll('#metricChecks label,#dashboardMetricChecks label')){
   if(option.dataset.metricKey!=='achievedOperators')continue;
   const caption=[...option.childNodes].find(node=>node.nodeType===3);
@@ -945,8 +947,10 @@ function render(){
    rows.push({name,domain:'總計',items:group,subtotal:true});
  }
  const grandTotals=sum(matching);
- for(const domain of shownDomains)rows.push({name:'總計',domain,items:matching.filter(e=>e.domain===domain),grandGroup:true});
- rows.push({name:'總計',domain:'總計',items:matching,grandTotal:true});
+ if(level<4){
+  for(const domain of shownDomains)rows.push({name:'總計',domain,items:matching.filter(e=>e.domain===domain),grandGroup:true});
+  rows.push({name:'總計',domain:'總計',items:matching,grandTotal:true});
+ }
  const frag=document.createDocumentFragment();
  for(let i=0;i<rows.length;i++){
    const row=rows[i],r=document.createElement('tr');
@@ -962,15 +966,15 @@ function render(){
     const n=document.createElement('td');n.className='grand-org';n.rowSpan=groupSize;n.textContent='總計';r.append(n);
    }else if(organizationStart){
     const n=document.createElement('td');n.className='org-cell';n.rowSpan=groupSize;
-    if(level<3){
+    if(level<4){
      const button=document.createElement('button');button.className='orglink';button.textContent=row.name+' ↗';
-     button.title='查看'+row.name+'的下一層';
+     button.title=level===3?'查看'+row.name+'的個人業績':'查看'+row.name+'的下一層';
      button.onclick=()=>{path.push(row.name);render();window.scrollTo({top:0,behavior:'smooth'})};n.append(button);
     }else{
      const title=document.createElement('strong');title.textContent=row.name;n.append(title);
     }
-    if(level===3){
-     const sub=document.createElement('span');sub.className='subline';sub.textContent='示範業務員';n.append(sub);
+    if(level===4){
+     const sub=document.createElement('span');sub.className='subline';sub.textContent='個人職域業績';n.append(sub);
     }
     r.append(n);
    }
@@ -982,7 +986,7 @@ function render(){
        acc[key]=acc[key]===null||next[key]===null?null:acc[key]+next[key];
       return acc;
      },{teamCount:0,newcomers:0})
-     :organizationMetrics([...path,row.name]);
+     :organizationMetrics(level===4?path:[...path,row.name]);
     for(const [key] of orgCols){
      const cell=document.createElement('td');cell.className='org-metric-cell';
      if(grandStart)cell.classList.add('grand-org-metric');
@@ -993,6 +997,8 @@ function render(){
    }
    const d=document.createElement('td');d.textContent=row.domain;d.style.textAlign='left';r.append(d);
    const values=sum(row.items);
+   const previousValues=sum(row.items,-1);
+   for(const [priorKey,currentKey] of Object.entries(PRIOR_YEAR_METRICS))values[priorKey]=previousValues[currentKey];
    // Every displayed percentage is local to the immediate organization:
    // domain row / its organization's subtotal; grand category / grand total.
    // A subtotal compared with itself is 100% when its KPI is nonzero.
