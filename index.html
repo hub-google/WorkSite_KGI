@@ -1009,24 +1009,25 @@ function render(){
     values[shareKey]=Number.isFinite(rowValue)&&Number.isFinite(parentValue)&&parentValue!==0
      ?100*rowValue/parentValue:null;
    }
+   const hideZero=Number.isFinite(values.worksites)&&values.worksites===0;
    for(const [key,label] of cols){
     const cell=document.createElement('td');
+    const suppressedZero=hideZero&&values[key]===0;
     if(DETAIL_METRICS.has(key)){
      const button=document.createElement('button');button.type='button';button.className='detail-link';
-     button.textContent=Number.isFinite(values[key])?fmt(values[key]):'—';button.title='查看'+label+'的商品分類統計';button.disabled=!Number.isFinite(values[key]);
+     button.textContent=Number.isFinite(values[key])&&!suppressedZero?fmt(values[key]):'—';button.title='查看'+label+'的商品分類統計';button.disabled=!Number.isFinite(values[key])||suppressedZero;
      const location=path.length?path.join('／'):'通路總計';
      const scope=(row.name==='總計'?location:location+'／'+row.name)+(row.domain==='總計'?'':'／'+row.domain);
      button.onclick=()=>openMetricDetail(key,label,row.items,scope);
      cell.append(button);
-    }else if(level===3&&key==='achievedOperators'){
-     // For a single salesperson only: 1 → O, 0 → X.
-     // Grand category/channel totals contain multiple people; they are not
-     // individual pass/fail statuses and must never be shown as O/X.
-     cell.textContent=(row.grandGroup||row.grandTotal||values[key]===null)
+    }else if(level>=3&&key==='achievedOperators'){
+     // A single salesperson uses O/X; 0 with no associated worksites displays —.
+     // Group and channel totals are never displayed as individual pass/fail.
+     cell.textContent=(row.grandGroup||row.grandTotal||values[key]===null||suppressedZero)
       ?'—':values[key]===1?'O':values[key]===0?'X':'—';
      cell.title=cell.textContent==='O'?'達標':cell.textContent==='X'?'未達標':'不適用';
      cell.setAttribute('aria-label',cell.title);
-    }else cell.textContent=values[key]===null?'—':(WORKPLACE_SHARES[key]
+    }else cell.textContent=values[key]===null||suppressedZero?'—':(WORKPLACE_SHARES[key]
      ?fmtFixed(values[key],1)+'%'
      :key==='activityRate'?fmtFixed(values[key],1)+'%':fmt(values[key]));
     r.append(cell)
