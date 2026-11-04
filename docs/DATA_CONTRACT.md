@@ -246,3 +246,9 @@ totalPremium+=Math.round(rawPremium*simulatedOverallMultiplier('premium',month))
 - 表格每列 `worksites===0` 時，自職域數及其後的指標中**值為 0**者顯示「—」；`worksites>0` 時顯示數值 0。資料層保留原始的數值 0，方便加總、排序、同比與一致性驗證。
 - `newcomers` 為 `data/organization-metrics.json` 模擬人員成員關係，非 Excel 來源所能認證的新人名單。未來接真實人事來源時必須另行修訂契約。
 - `latestSourceMonth` 定義為 manifest 所含且不晚於台灣當月的最新工作月；展示與日期輸入不可越過該截止，以免今年無 11 月來源，卻將去年 11 月加進同比。
+
+
+### 2026-11-04 補充：同期成長率資料契約
+- `priorFycGrowth`、`priorFynGrowth`、`priorPremiumGrowth` 為視圖派生指標，使用同一組織、職域、月份範圍的實際 `sum(items)` 與 `sum(items,-1)` 結果。
+- 計算式 `growthRate(thisYear,lastYear)=(thisYear-lastYear)/lastYear*100`；`lastYear===0` 或無同期來源時回傳 `null`，不是 0。負值不截斷，原始匯入數字不變。
+- 六個同期金額／成長率欄位皆只是預設隱藏，使用者可獨立切換；不影響資料來源、統計值、排序依據或匯入內容。
