@@ -725,13 +725,13 @@ function targetHelp(key='active',displayLabel=null){
  const title=document.createElement('strong');title.textContent=label+'計算說明';tooltip.append(title);
  if(isNewcomer){
    const note=document.createElement('small');
-   note.textContent='目前新人數來自模擬組織名冊，每位業務員最多計入 1 人，按組織層級向上去重加總。非實際人事新人名單，待正式名冊接入後替換。';
+   note.textContent='兩年以內AS 或 有效專案SR';
    tooltip.append(note);
   }else if(isAgent){
   const note=document.createElement('small');
   note.textContent=displayLabel==='是否達標'
    ?'O＝達標；X＝未達標。此狀態依單一業務員的固定隨機結果呈現，非實際考核結果。'
-   :'每位經營人員的固定隨機達標機率介於 50%～90%；同一人跨職域、組織層級只認列一次，確保小計與總計一致。非實際考核結果，樣本少時比例可能偏離此區間。';
+   :'達成各職域標準的經營人員數';
   tooltip.append(note);
  }else{
   for(const [name,target] of TARGETS){const line=document.createElement('span');line.textContent=name+'：'+(target||'尚未設定');tooltip.append(line)}
@@ -794,7 +794,7 @@ function renderDashboard(items,showYoY){
     const subtotal=document.createElement('span');subtotal.className='ring-total ring-workplace-total';
     subtotal.textContent='職域'+field.name+'：'+compact(workplace);
     const dates=document.createElement('span');dates.className='ring-period';
-    dates.textContent=period.offset===0?start+' ～ '+end:shiftYear(start,-1)+' ～ '+shiftYear(end,-1);
+    dates.textContent='統計期間：'+(period.offset===0?start+' ～ '+end:shiftYear(start,-1)+' ～ '+shiftYear(end,-1));
     top.append(h,whole,subtotal,dates);card.append(top);
     // Large donut with all category names, amounts and shares on the chart.
     // Worksite categories are ordered by amount; the residual "Other" is always last.
