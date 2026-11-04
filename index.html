@@ -340,6 +340,7 @@ const taipeiMonth=taipeiParts.find(part=>part.type==='month').value;
 const yyyy=Number(taipeiYear),currentMonth=taipeiYear+taipeiMonth;
 byId('start').value=taipeiYear+'01';byId('end').value=currentMonth;
 let path=[], start=byId('start').value,end=byId('end').value;
+let latestSourceMonth=null; // Real data may lag the current calendar month.
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function count(key,min,max){return min+(hash(key)%(max-min+1))}
 const entries=[];
@@ -452,6 +453,11 @@ async function loadActualData(){
   }
   for(const year of ['2025','2026'])if(tally[year]!==Number(m.audit[year].rows))throw new Error(year+' 來源總列數錯誤');
   actualManifest=m;actualReady=true;
+  // Do not compare a partial current year against a longer prior-year period.
+  latestSourceMonth=m.shards.map(block=>block.month).filter(month=>month<=currentMonth).sort().at(-1)||null;
+  if(latestSourceMonth&&end>latestSourceMonth){
+   end=latestSourceMonth;byId('end').value=end;
+  }
   // 複數原始類別可能對應同一職域；清單去重，避免圖表重複加總。
   DOMAINS.splice(0,DOMAINS.length,...new Set(m.domains.map(normalizeDomain)));
   syncDomainColors();
@@ -1040,7 +1046,7 @@ for(const [key,label] of TABLE_METRICS){const wrap=document.createElement('label
 byId('dashboardMetricBtn').onclick=()=>{const menu=byId('dashboardMetricMenu');menu.hidden=!menu.hidden;byId('dashboardMetricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('metricMenu').hidden=true;byId('metricBtn').setAttribute('aria-expanded','false')};
 byId('metricBtn').onclick=()=>{const menu=byId('metricMenu');menu.hidden=!menu.hidden;byId('metricBtn').setAttribute('aria-expanded',String(!menu.hidden));byId('dashboardMetricMenu').hidden=true;byId('dashboardMetricBtn').setAttribute('aria-expanded','false')};
 document.addEventListener('click',e=>{if(!e.target.closest('.metricbox')){for(const [menu,btn] of [['metricMenu','metricBtn'],['dashboardMetricMenu','dashboardMetricBtn']]){byId(menu).hidden=true;byId(btn).setAttribute('aria-expanded','false')}}});
-byId('apply').onclick=()=>{const a=byId('start').value.trim(),b=byId('end').value.trim();const valid=/^\d{4}(0[1-9]|1[0-2])$/;if(!valid.test(a)||!valid.test(b)||a>b){alert('請輸入正確的月份區間（YYYYMM，例如 202601～'+currentMonth+'）');return}if(b>currentMonth){alert('結束月份不可晚於台灣目前月份 '+currentMonth);return}start=a;end=b;render()};
+byId('apply').onclick=()=>{const a=byId('start').value.trim(),b=byId('end').value.trim();const valid=/^\d{4}(0[1-9]|1[0-2])$/;if(!valid.test(a)||!valid.test(b)||a>b){alert('請輸入正確的月份區間（YYYYMM，例如 202601～'+currentMonth+'）');return}if(b>currentMonth){alert('結束月份不可晚於台灣目前月份 '+currentMonth);return}if(latestSourceMonth&&b>latestSourceMonth){alert('目前實際業績資料僅截至 '+latestSourceMonth+'，請選擇資料已匯入的月份');return}start=a;end=b;render()};
 byId('detailClose').onclick=()=>byId('metricDetailDialog').close();
 byId('policyDetailBtn').onclick=()=>openPolicyDetails(filteredItems().items);
 byId('policyClose').onclick=()=>byId('policyDetailDialog').close();
