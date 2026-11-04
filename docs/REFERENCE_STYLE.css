@@ -25,7 +25,7 @@
 .ring-heading{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .ring-heading h3{margin:0}
 .ring-kpi{display:inline-block;background:#4e8fdb;color:#fff;border-radius:100px;padding:5px 23px;font-size:21px;font-weight:850;line-height:1.15;letter-spacing:.4px}
-.ring-total{font-size:13px;color:#71859a;font-variant-numeric:tabular-nums;font-weight:650}
+.ring-total{font-size:18px;color:#506a81;font-variant-numeric:tabular-nums;font-weight:800;line-height:1.45}
 .ring-workplace-total{color:#3f6c97;font-weight:800;margin-top:1px}
 .ring-svg{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif}
 .ring-period{font-size:11px;color:#8b9eaf;margin-top:2px}
@@ -179,3 +179,6 @@
 }
 #thead th:nth-child(2),#thead th:nth-child(3){min-width:94px}
 
+
+/* 2026-11-04 desktop/mobile chart total label adjustment */
+@media(max-width:600px){.ring-total{font-size:16px}}
