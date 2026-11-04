@@ -237,3 +237,11 @@ totalPremium+=Math.round(rawPremium*simulatedOverallMultiplier('premium',month))
 需驗證：分片數和稽核列數、相同日期的來源 KPI 與 audit、負數和小數保留、年末／跨年日期、同人跨職域去重、同職域跨區域去重、模擬指標穩定性、父子區域加總、百分比分母、202610↔202510 同期。參見 [驗收清單](ACCEPTANCE_TESTS.md)。
 
 **風險**：目前 GitHub Pages 和 data 皆公開；靜態資料不等於正式授權；來源已遮罩也不構成完整個資保護。正式版上線前必須另做 SSO、後端行級授權、完整資料安全設計。
+
+
+## 2026-11-04 新增同期 KPI 與零值呈現契約
+
+- `priorFyc`、`priorFyn`、`priorPremium` 分別對應同一組織／職域／工作月份區間向前 1 年之真實 K、L、N 欄加總。唯一來源為 `data/manifest.json` 指向的 `data/shards/YYYYMM.txt`，資料已先篩 AQ=1；不是責任額或模擬整體保費。
+- 年度若不在 `manifest.audit` 中，統計值為 `null`，UI 顯示「—」。不能將無資料誤寫成零。2026 對 2025 可直接比較；2025 對 2024 無來源不可填寫。
+- 表格每列 `worksites===0` 時，自職域數及其後的指標中**值為 0**者顯示「—」；`worksites>0` 時顯示數值 0。資料層保留原始的數值 0，方便加總、排序、同比與一致性驗證。
+- `newcomers` 為 `data/organization-metrics.json` 模擬人員成員關係，非 Excel 來源所能認證的新人名單。未來接真實人事來源時必須另行修訂契約。
