@@ -245,3 +245,4 @@ totalPremium+=Math.round(rawPremium*simulatedOverallMultiplier('premium',month))
 - 年度若不在 `manifest.audit` 中，統計值為 `null`，UI 顯示「—」。不能將無資料誤寫成零。2026 對 2025 可直接比較；2025 對 2024 無來源不可填寫。
 - 表格每列 `worksites===0` 時，自職域數及其後的指標中**值為 0**者顯示「—」；`worksites>0` 時顯示數值 0。資料層保留原始的數值 0，方便加總、排序、同比與一致性驗證。
 - `newcomers` 為 `data/organization-metrics.json` 模擬人員成員關係，非 Excel 來源所能認證的新人名單。未來接真實人事來源時必須另行修訂契約。
+- `latestSourceMonth` 定義為 manifest 所含且不晚於台灣當月的最新工作月；展示與日期輸入不可越過該截止，以免今年無 11 月來源，卻將去年 11 月加進同比。
