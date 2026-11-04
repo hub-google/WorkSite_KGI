@@ -245,11 +245,18 @@ const ORGANIZATIONS=[]; // Loaded from D:G via data/manifest.json
 const DOMAINS=['闔家安康','醫護公會','台積電','駐廠職域'];
 // 新安東京併入駐廠職域：只合併展示分類，原始業績列保持不變。
 const normalizeDomain=name=>name==='駐廠'||name==='新安東京'?'駐廠職域':name;
-const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['achievedOperators','達標經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['priorFyc','去年同期職域FYC'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['priorFyn','去年同期職域FYN'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['priorPremium','去年同期職域保費'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
+const METRICS=[['teamCount','組數'],['newcomers','新人數'],['worksites','職域數'],['active','達標職域數'],['operators','經營人員數'],['achievedOperators','達標經營人員數'],['activityRate','實動率'],['totalFyc','FYC'],['fyc','職域FYC'],['priorFyc','去年同期職域FYC'],['priorFycGrowth','去年同期FYC成長率'],['fycShare','職域FYC占比'],['totalFyn','FYN'],['fyn','職域FYN'],['priorFyn','去年同期職域FYN'],['priorFynGrowth','去年同期FYN成長率'],['fynShare','職域FYN占比'],['totalPremium','保費'],['premium','職域保費'],['priorPremium','去年同期職域保費'],['priorPremiumGrowth','去年同期保費成長率'],['premiumShare','職域保費占比'],['group','團險客戶數'],['claims','理賠客戶數'],['line','LINE預約客戶數']];
 // Table contribution shares are workplace-category KPI / current organization KPI total.
 // The simulated company-wide KPIs are deliberately not the denominators.
 const WORKPLACE_SHARES={fycShare:'fyc',fynShare:'fyn',premiumShare:'premium'};
 const PRIOR_YEAR_METRICS={priorFyc:'fyc',priorFyn:'fyn',priorPremium:'premium'};
+const YOY_GROWTH_METRICS={priorFycGrowth:'fyc',priorFynGrowth:'fyn',priorPremiumGrowth:'premium'};
+// Growth = (current - same-period last year) / last year * 100.
+// Missing year or zero baseline is not a computable growth percentage.
+function growthRate(current,previous){
+ return Number.isFinite(current)&&Number.isFinite(previous)&&previous!==0
+  ?100*(current-previous)/previous:null;
+}
 const OVERALL_TO_WORKSITE={totalFyc:'fyc',totalFyn:'fyn',totalPremium:'premium'};
 const ORGANIZATION_METRICS=new Set(['teamCount','newcomers']);
 const TABLE_METRICS=METRICS.filter(([key])=>!['totalFyc','totalFyn','totalPremium'].includes(key));
@@ -329,7 +336,7 @@ function renderMetricDetail(){
 }
 
 // Default table columns: preserve prior metric order, only hide overall FYC/FYN/premium.
-const VISIBLE=new Set(['teamCount','newcomers','worksites','operators','achievedOperators','activityRate','fyc','priorFyc','fyn','priorFyn','premium','priorPremium']);
+const VISIBLE=new Set(['teamCount','newcomers','worksites','operators','achievedOperators','activityRate','fyc','fyn','premium']);
 const LEVELS=['通路總計','區域中心','業務區','通訊處','業務員'];
 const byId=id=>document.getElementById(id);
 // Use the current calendar month in Taiwan, never December by default.
@@ -677,13 +684,23 @@ function toggleSort(key){
  else{sortMetric=key;sortDirection='desc'}
  render();
 }
+function metricForOrganization(items,key){
+ const priorKey=PRIOR_YEAR_METRICS[key];
+ if(priorKey)return sum(items,-1)[priorKey];
+ const growthKey=YOY_GROWTH_METRICS[key];
+ if(growthKey)return growthRate(sum(items)[growthKey],sum(items,-1)[growthKey]);
+ return sum(items)[key];
+}
 function sortedOrganizations(names,matching){
  if(!sortMetric)return [...names].sort(compareOrganizationNames);
  const totals=new Map(names.map(name=>[name,ORGANIZATION_METRICS.has(sortMetric)
   ?organizationMetrics(path.length===4?path:[...path,name])[sortMetric]
-  :sum(matching.filter(item=>childName(item)===name),PRIOR_YEAR_METRICS[sortMetric]?-1:0)[PRIOR_YEAR_METRICS[sortMetric]||sortMetric]]));
+  :metricForOrganization(matching.filter(item=>childName(item)===name),sortMetric)]));
  return [...names].sort((a,b)=>{
-  const difference=(totals.get(a)-totals.get(b))*(sortDirection==='desc'?-1:1);
+  const va=totals.get(a),vb=totals.get(b);
+  if(!Number.isFinite(va))return Number.isFinite(vb)?1:a.localeCompare(b,'zh-TW');
+  if(!Number.isFinite(vb))return -1;
+  const difference=(va-vb)*(sortDirection==='desc'?-1:1);
   return difference||a.localeCompare(b,'zh-TW');
  });
 }
@@ -1005,6 +1022,8 @@ function render(){
    const values=sum(row.items);
    const previousValues=sum(row.items,-1);
    for(const [priorKey,currentKey] of Object.entries(PRIOR_YEAR_METRICS))values[priorKey]=previousValues[currentKey];
+   for(const [growthKey,currentKey] of Object.entries(YOY_GROWTH_METRICS))
+    values[growthKey]=growthRate(values[currentKey],previousValues[currentKey]);
    // Every displayed percentage is local to the immediate organization:
    // domain row / its organization's subtotal; grand category / grand total.
    // A subtotal compared with itself is 100% when its KPI is nonzero.
@@ -1035,7 +1054,8 @@ function render(){
      cell.setAttribute('aria-label',cell.title);
     }else cell.textContent=values[key]===null||suppressedZero?'—':(WORKPLACE_SHARES[key]
      ?fmtFixed(values[key],1)+'%'
-     :key==='activityRate'?fmtFixed(values[key],1)+'%':fmt(values[key]));
+     :key==='activityRate'?fmtFixed(values[key],1)+'%'
+     :YOY_GROWTH_METRICS[key]?(values[key]>0?'+':'')+fmtFixed(values[key],1)+'%':fmt(values[key]));
     r.append(cell)
    }
    frag.append(r)
