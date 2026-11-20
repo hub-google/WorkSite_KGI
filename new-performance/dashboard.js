@@ -38,8 +38,10 @@ const $=id=>document.getElementById(id);
 const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
 const dp=k=>parts.find(p=>p.type===k).value;
 const today=dp('year')+'-'+dp('month')+'-'+dp('day'),todayMonth=dp('year')+dp('month');
-const state={mode:'month',month:todayMonth,year:dp('year'),selected:new Set(C.map(x=>x.name)),path:[],detail:null,page:0};
+const state={mode:'month',month:todayMonth,year:dp('year'),domain:'闔家安康',path:[],detail:null,page:0};
 const regions=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
+let orgReady=false,orgIssue=null;
+const sourceInfo={agents:0,regions:0,areas:0,offices:0};
 const allPeople=new Map();
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function rnd(seed,min,max){return min+hash(String(seed))%(max-min+1)}
@@ -51,15 +53,43 @@ function monthRange(start,end){
  }
  return out;
 }
-for(const conf of C){
- const members=[];
- for(let r=0;r<6;r++)for(let z=1;z<=2;z++)for(let o=1;o<=2;o++)for(let p=1;p<=5;p++){
-  const path=[regions[r],regions[r].replace('區域','')+'業務'+z+'區','示範通訊處 '+pad(r+1)+pad(z)+pad(o),'示範業務員 '+pad(r+1)+pad(z)+pad(o)+pad(p)];
-  const seed=conf.name+'|'+path.join('|');
-  members.push({path,seed,config:conf.name,siteCount:rnd(seed+'|sites',2,5)});
+
+async function loadOrganization(){
+ try{
+  const response=await fetch('data/manifest.json',{cache:'no-cache'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const manifest=await response.json();
+  if(manifest.format!=='WorkSiteKGI-demo-real-v1'||!Array.isArray(manifest.agents)||manifest.agents.length<100)
+   throw new Error('原績效管理組織索引格式不正確');
+  const seen=new Set(),paths=[];
+  for(const raw of manifest.agents){
+   if(!Array.isArray(raw)||raw.length!==4||raw.some(v=>typeof v!=='string'||!v.trim()))
+    throw new Error('組織索引有不完整的 D/E/F/G 欄位');
+   const key=JSON.stringify(raw);
+   if(seen.has(key))continue;seen.add(key);
+   paths.push(raw.slice());
+  }
+  const areas=new Set(paths.map(x=>x.slice(0,2).join('|')));
+  const offices=new Set(paths.map(x=>x.slice(0,3).join('|')));
+  const regionCount=new Set(paths.map(x=>x[0])).size;
+  sourceInfo.agents=paths.length;
+  sourceInfo.regions=regionCount;
+  sourceInfo.areas=areas.size;
+  sourceInfo.offices=offices.size;
+  allPeople.clear();
+  for(const conf of C){
+   const members=paths.map(path=>{
+    const seed=conf.name+'|'+JSON.stringify(path);
+    return {path,seed,config:conf.name,siteCount:rnd(seed+'|sites',2,5)};
+   });
+   allPeople.set(conf.name,members);
+  }
+  orgReady=true;orgIssue=null;render();
+ }catch(err){
+  orgReady=false;orgIssue=String(err.message||err);render();
  }
- allPeople.set(conf.name,members);
 }
+
 function sampleSites(member){
  return Array.from({length:member.siteCount},(_,i)=>{
   const key=member.seed+'|site|'+i;
@@ -74,7 +104,7 @@ function groups(members,depth){
   if(!map.has(key))map.set(key,[]);
   map.get(key).push(person);
  }
- return [...map].sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant'));
+ return [...map].sort((a,b)=>{if(depth===0){const ai=regions.indexOf(a[0]),bi=regions.indexOf(b[0]);if(ai!==bi)return (ai<0?99:ai)-(bi<0?99:bi);}return a[0].localeCompare(b[0],'zh-Hant');});
 }
 function currentMembers(conf){
  return allPeople.get(conf.name).filter(p=>state.path.every((v,i)=>p.path[i]===v));
@@ -308,6 +338,13 @@ function section(conf,p){
   }
   tb.append(row);
  }
+ if(state.path.length===0){
+  const total=aggregate(members,conf,p);
+  const row=el('tr','np-grand-total');
+  row.append(el('td','np-level-name','通路總計'));
+  for(const col of cols)row.append(el('td','',fmt(col,metric(col,total))));
+  tb.append(row);
+ }
  table.append(tb);wrap.append(table);sec.append(wrap);
  sec.append(el('p','np-footnote','此頁全部指標為固定規則生成的 DEMO 模擬資料；各月、年度、昨日及上週均非正式營運實績。'));
  return sec;
@@ -324,6 +361,7 @@ function breadcrumb(){
  state.path.forEach((name,i)=>{nav.append(el('span','np-crumb-divider','›'));add(name,i+1)});
  if(state.detail)nav.append(el('span','np-crumb-divider','›'),el('span','np-crumb-current',state.detail.confName+' '+state.detail.depth+'.5 據點明細'));
 }
+
 function render(){
  if(!root)return;
  document.querySelectorAll('[data-np-mode]').forEach(btn=>{
@@ -332,44 +370,42 @@ function render(){
  });
  $('npMonthBox').hidden=state.mode!=='month';$('npYearBox').hidden=state.mode!=='year';
  $('npMonth').value=state.month;$('npYear').value=state.year;
- $('npCount').textContent=state.selected.size+'/4';
- $('npSource').textContent='DEMO 模擬數據｜固定值，非真實業績';
+ $('npDomainSelect').value=state.domain;
+ $('npSource').textContent=orgReady?
+  '組織沿用原績效管理（'+sourceInfo.regions+' 區域中心／'+sourceInfo.areas+' 業務區／'+sourceInfo.offices+' 通訊處／'+sourceInfo.agents+' 位業務員）｜績效 DEMO':
+  '組織來源：原績效管理｜績效 DEMO';
  breadcrumb();
  const sections=$('npSections'),msg=$('npNotice');sections.replaceChildren();msg.hidden=true;
+ if(!orgReady){
+  $('npRange').textContent='組織資料尚未載入';
+  msg.textContent=orgIssue?'讀取舊版組織資料失敗：'+orgIssue:'正在讀取原績效管理的區域中心、業務區、通訊處與業務員組織…';
+  msg.hidden=false;return;
+ }
  if(state.mode==='month'&&!/^[0-9]{4}(0[1-9]|1[0-2])$/.test(state.month)){
   $('npRange').textContent='請輸入 YYYYMM';msg.textContent='請輸入有效年月，例如 202611。';msg.hidden=false;return;
  }
  const p=period();$('npRange').textContent=p.label+'｜模擬';
- if(!state.selected.size){msg.textContent='請從右上角選擇至少一種職域。';msg.hidden=false;return}
- for(const conf of C)if(state.selected.has(conf.name))sections.append(section(conf,p));
+ const config=C.find(x=>x.name===state.domain)||C[0];
+ sections.append(section(config,p));
 }
+
 function init(){
- const root=$('npOptions');
- for(const conf of C){
-  const label=el('label','np-check'),check=document.createElement('input');check.type='checkbox';
-  check.value=conf.name;check.checked=true;
-  check.onchange=()=>{check.checked?state.selected.add(conf.name):state.selected.delete(conf.name);
-   if(state.detail&&!state.selected.has(state.detail.confName))state.detail=null;render()};
-  const dot=el('i');dot.style.background=conf.color;
-  label.append(check,dot,document.createTextNode(conf.name));root.append(label);
- }
- const trigger=$('npTrigger'),popup=$('npPopup'),close=()=>{popup.hidden=true;trigger.setAttribute('aria-expanded','false')};
- trigger.onclick=()=>{popup.hidden=!popup.hidden;trigger.setAttribute('aria-expanded',String(!popup.hidden))};
- document.addEventListener('click',e=>{if(!$('npFilter').contains(e.target))close()});
- document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
- for(const [id,on] of [['npAll',true],['npNone',false]]){
-  $(id).onclick=()=>{state.selected=new Set(on?C.map(x=>x.name):[]);
-   root.querySelectorAll('input').forEach(x=>x.checked=on);
-   if(state.detail&&!state.selected.has(state.detail.confName))state.detail=null;render()};
- }
+ const select=$('npDomainSelect');
+ select.value=state.domain;
+ select.onchange=e=>{
+  state.domain=e.target.value;
+  state.path=[];state.detail=null;state.page=0;
+  render();
+ };
  document.querySelectorAll('[data-np-mode]').forEach(btn=>btn.onclick=()=>{
-  state.mode=btn.dataset.npMode;state.path=[];state.detail=null;render();
+  state.mode=btn.dataset.npMode;state.path=[];state.detail=null;state.page=0;render();
  });
  $('npMonth').oninput=e=>{state.month=e.target.value.replace(/\D/g,'').slice(0,6);
   if(state.month.length===6){state.detail=null;render()}};
  $('npMonth').onchange=render;
  $('npYear').onchange=e=>{state.year=e.target.value;state.detail=null;state.path=[];render()};
  render();
+ loadOrganization();
 }
 window.renderNewPerformance=render;
 init();
