@@ -1249,7 +1249,7 @@ function showView(name){
  byId('placeholder').hidden=true;
  byId('subtitle').hidden=name==='職域新增、調整、刪除回報';
  byId('subtitle').textContent=name==='新績效管理'?'依職域類別查看專屬指標 · 支援各組織階層鑽取':name==='績效管理'?'組織績效總覽 · 逐層查看各職域經營成果':name==='經營資源'?'職域經營常用資源與服務入口':name==='達人經驗談'?'職域經營經驗分享 · 實戰技巧 DEMO':name==='職域新增、調整、刪除回報'?'':name==='最新消息'?'最新公告與重要職域資訊 · DEMO':'';
- if((name==='績效管理'||name==='新績效管理')&&!performanceInitialized){
+ if(name==='績效管理'&&!performanceInitialized){
   performanceInitialized=true;
   render();
   loadActualData();
