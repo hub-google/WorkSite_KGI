@@ -80,15 +80,15 @@ function currentMembers(conf){
  return allPeople.get(conf.name).filter(p=>state.path.every((v,i)=>p.path[i]===v));
 }
 function period(){
- const date=new Date(today+'T00:00:00+08:00');
+ const date=new Date(today+'T00:00:00Z');
  const iso=d=>d.toISOString().slice(0,10);
  if(state.mode==='yesterday'){
-  date.setDate(date.getDate()-1);const x=iso(date);return {label:x,months:[x.slice(0,7).replace('-','')],factor:0.044};
+  date.setUTCDate(date.getUTCDate()-1);const x=iso(date);return {label:x,months:[x.slice(0,7).replace('-','')],factor:0.044};
  }
  if(state.mode==='lastweek'){
-  const w=(date.getDay()+6)%7;date.setDate(date.getDate()-w-7);
+  const w=(date.getUTCDay()+6)%7;date.setUTCDate(date.getUTCDate()-w-7);
   const from=iso(date),first=from.slice(0,7).replace('-','');
-  date.setDate(date.getDate()+6);const to=iso(date),last=to.slice(0,7).replace('-','');
+  date.setUTCDate(date.getUTCDate()+6);const to=iso(date),last=to.slice(0,7).replace('-','');
   return {label:from+' ～ '+to,months:monthRange(first,last),factor:0.235};
  }
  if(state.mode==='year'){
