@@ -30,167 +30,345 @@ const C=[
   3:['駐廠職域數','經營人員數','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','出勤率'],
   4:['駐廠職域名稱','職域代碼','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
 ];
-const ROOT=document.getElementById('newPerformance');
-if(!ROOT)return;
+
+const root=document.getElementById('newPerformance');
+if(!root)return;
+const el=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
 const $=id=>document.getElementById(id);
-const ui=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n;};
-const nowParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
-const part=k=>nowParts.find(p=>p.type===k).value;
-const nowMonth=part('year')+part('month');
-const state={mode:'month',month:nowMonth,year:part('year'),selected:new Set(C.map(x=>x.name)),path:[],sites:false};
-const monthPattern=/^\d{4}(0[1-9]|1[0-2])$/;
-const periods=()=>{if(state.mode==='month')return [state.month,state.month];if(state.mode==='year'){const from=state.year+'01';const to=actualManifest&&actualManifest.shards.map(x=>x.month).filter(x=>x.startsWith(state.year)).sort().at(-1);return [from,to||state.year+'12'];}return null;};
-function labelRange(){
- const d=new Date(Date.UTC(Number(part('year')),Number(part('month'))-1,Number(part('day'))));
- const iso=x=>x.toISOString().slice(0,10);
- if(state.mode==='yesterday'){d.setUTCDate(d.getUTCDate()-1);return iso(d);}
- const dow=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-dow-7);
- const last=new Date(d);last.setUTCDate(last.getUTCDate()+6);return iso(d)+' ～ '+iso(last);
-}
-function subset(config){return entries.filter(x=>config.domains.includes(x.domain)&&state.path.every((v,i)=>x.path[i]===v));}
-function groupRows(items,depth){const m=new Map();for(const item of items){const key=item.path[depth];if(key==null)continue;if(!m.has(key))m.set(key,[]);m.get(key).push(item);}return [...m].sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant'));}
-function getStats(items,a,b){
- const persons=new Map(),sites=new Set(),offices=new Set();let fyc=0,fyn=0,premium=0,oldFyc=0;
- const lastA=shiftYear(a,-1),lastB=shiftYear(b,-1);
- for(const item of items){
-  const person=JSON.stringify(item.path),st=persons.get(person)||0;
-  let active=st;
-  for(const row of item.rows){
-   if(row.month>=a&&row.month<=b){fyc+=Number(row.v[2])||0;fyn+=Number(row.v[3])||0;premium+=Number(row.v[4])||0;active+=Number(row.v[3])||0;}
-   if(row.month>=lastA&&row.month<=lastB)oldFyc+=Number(row.v[2])||0;
-  }
-  persons.set(person,active);
-  if(item.path[2])offices.add(item.path.slice(0,3).join('|'));
-  for(const site of item.siteIds||[])sites.add(site);
+const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+const dp=k=>parts.find(p=>p.type===k).value;
+const today=dp('year')+'-'+dp('month')+'-'+dp('day'),todayMonth=dp('year')+dp('month');
+const state={mode:'month',month:todayMonth,year:dp('year'),selected:new Set(C.map(x=>x.name)),path:[],detail:null,page:0};
+const regions=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
+const allPeople=new Map();
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rnd(seed,min,max){return min+hash(String(seed))%(max-min+1)}
+function pad(n){return String(n).padStart(2,'0')}
+function monthRange(start,end){
+ const out=[];let y=Number(start.slice(0,4)),m=Number(start.slice(4));
+ while((y*12+m)<=Number(end.slice(0,4))*12+Number(end.slice(4))&&out.length<24){
+  out.push(y+pad(m));m++;if(m>12){y++;m=1;}
  }
- const activePeople=[...persons.values()].filter(n=>n>0).length;
- return {fyc,fyn,premium,oldFyc,people:persons.size,activePeople,activity:persons.size?activePeople/persons.size*100:null,sites:worksiteReady?sites.size:null,offices:offices.size, yoy:oldFyc?100*(fyc-oldFyc)/Math.abs(oldFyc):null};
+ return out;
 }
-function value(name,d,config,monthMode){
- if(name==='FYC')return d.fyc;
- if(name==='FYN')return d.fyn;
- if(['總據點數','經營據點數','分派廠區數','駐廠職域數'].includes(name))return d.sites;
- if(['經營人員數','經營人數'].includes(name))return d.people;
- if(name==='經營通訊處數')return d.offices;
- if(name==='個險實動人數')return d.activePeople;
- if(['個險實動率','經營人員實動率'].includes(name))return d.activity;
- if(['去年同期FYC成長率','FYC成長率'].includes(name))return d.yoy;
- // Cannot split source FYC into doctor/nurse guild nor infer claims, appointments, attendance or business targets.
- return null;
-}
-function fmt(name,n){
- if(n===null||n===undefined||!Number.isFinite(n))return '—';
- if(name.includes('率')||name==='FYC成長率')return (n>0&&name.includes('成長')?'+':'')+n.toFixed(1)+'%';
- if(name==='FYC'||name==='FYP'||name.includes('FYC')||name==='FYN'){if(Math.abs(n)>=100000000)return (n/100000000).toFixed(2)+'億';if(Math.abs(n)>=10000)return (n/10000).toFixed(1)+'萬';}
- return n.toLocaleString('zh-TW',{maximumFractionDigits:1});
-}
-function canShow(name){return ['FYC','FYN','總據點數','經營據點數','分派廠區數','駐廠職域數','經營人員數','經營人數','經營通訊處數','個險實動人數','個險實動率','經營人員實動率','去年同期FYC成長率','FYC成長率'].includes(name);}
-function level(){return Math.min(state.path.length+1,4);}
-function selectedColumns(config){return config.levels[level()];}
-function makeSection(config,a,b){
- const items=subset(config),stat=getStats(items,a,b);
- const sec=ui('section','np-domain');sec.style.setProperty('--np-accent',config.color);
- const title=ui('div','np-domain-title');
- const h=ui('h2','',config.name),subtitle=ui('p','',config.desc);
- title.append(h,subtitle);
- const note=ui('span','np-pill','第 '+level()+' 階層｜'+['','區域中心','業務區','通訊處','業務員'][level()]);
- const head=ui('div','np-domain-head');head.append(title,note);sec.append(head);
- const cols=selectedColumns(config);
- const highlights=cols.filter(canShow).slice(0,4);
- const cards=ui('div','np-cards');
- for(const name of highlights){const card=ui('div','np-metric');card.append(ui('span','',name),ui('strong','',fmt(name,value(name,stat,config))));const foot=ui('small','',name.includes('據點')||name.includes('廠區')?'目前有效名冊快照':'匯入業績／可計算指標');card.append(foot);cards.append(card);}
- if(cards.childElementCount)sec.append(cards);
- const controls=ui('div','np-table-head');
- const lhs=ui('div');lhs.append(ui('strong','',state.path.length===4?'業務員績效明細':(['區域中心','業務區','通訊處','業務員'][state.path.length]+'績效明細')),ui('small','','依 Excel「'+config.name+'」第 '+level()+' 層欄位順序'));
- controls.append(lhs);
- if(state.path.length>=3&&config.sites3){
-  const btn=ui('button','np-plain',state.sites?'返回績效':'據點資訊（'+(state.path.length===3?'3.5':'4.5')+'層）');
-  btn.type='button';btn.addEventListener('click',()=>{state.sites=!state.sites;render()});controls.append(btn);
+for(const conf of C){
+ const members=[];
+ for(let r=0;r<6;r++)for(let z=1;z<=2;z++)for(let o=1;o<=2;o++)for(let p=1;p<=5;p++){
+  const path=[regions[r],regions[r].replace('區域','')+'業務'+z+'區','示範通訊處 '+pad(r+1)+pad(z)+pad(o),'示範業務員 '+pad(r+1)+pad(z)+pad(o)+pad(p)];
+  const seed=conf.name+'|'+path.join('|');
+  members.push({path,seed,config:conf.name,siteCount:rnd(seed+'|sites',2,5)});
  }
- sec.append(controls);
- const wrap=ui('div','np-table-wrap'),table=ui('table','np-table'),thead=ui('thead'),hr=ui('tr');
- const details=state.sites&&state.path.length>=3&&config.sites3;
- const columns=details?(state.path.length===3?config.sites3:config.sites4):cols;
- hr.append(ui('th','',details?'據點資料':(['區域中心','業務區','通訊處','業務員'][Math.min(state.path.length,3)])));
- for(const col of columns)hr.append(ui('th','',col));
- thead.append(hr);table.append(thead);
- const tb=ui('tbody');
- if(details){
-  const tr=ui('tr');const td=ui('td','np-empty');
-  td.colSpan=columns.length+1;td.textContent='原始資料只有去識別化的據點索引，沒有據點名稱、職域代碼、地址及考核資料；待接入據點明細來源。';
-  tr.append(td);tb.append(tr);
- }else{
-  const groups=state.path.length===4?[[state.path[3],items]]:groupRows(items,state.path.length);
-  if(!groups.length){const tr=ui('tr'),td=ui('td','np-empty','此層級尚無已匯入的資料');td.colSpan=columns.length+1;tr.append(td);tb.append(tr);}
-  for(const [name,group] of groups){
-   const row=ui('tr'),label=ui('td','np-level-name');
-   if(state.path.length<4){
-    const btn=ui('button','np-link',name+'　›');btn.type='button';
-    btn.title='查看'+name+'下一層績效';btn.addEventListener('click',()=>{state.path.push(name);state.sites=false;render();window.scrollTo({top:0,behavior:'smooth'});});
-    label.append(btn);
-   }else label.textContent=name;
-   row.append(label);
-   const stats=getStats(group,a,b);
-   for(const metric of columns){const computed=value(metric,stats,config);const cell=ui('td','',fmt(metric,computed));if(computed===null)cell.title='原始資料未提供此指標；不以推估值代替';else if((metric==='FYC'||metric==='FYN')&&computed!==null)cell.title=Number(computed).toLocaleString('zh-TW',{maximumFractionDigits:2});row.append(cell);}
-   tb.append(row);
+ allPeople.set(conf.name,members);
+}
+function sampleSites(member){
+ return Array.from({length:member.siteCount},(_,i)=>{
+  const key=member.seed+'|site|'+i;
+  return {key,member,index:i,code:'WS'+String(hash(key)).padStart(10,'0')};
+ });
+}
+function groups(members,depth){
+ const map=new Map();
+ for(const person of members){
+  const key=person.path[depth];
+  if(key===undefined)continue;
+  if(!map.has(key))map.set(key,[]);
+  map.get(key).push(person);
+ }
+ return [...map].sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant'));
+}
+function currentMembers(conf){
+ return allPeople.get(conf.name).filter(p=>state.path.every((v,i)=>p.path[i]===v));
+}
+function period(){
+ const date=new Date(today+'T00:00:00+08:00');
+ const iso=d=>d.toISOString().slice(0,10);
+ if(state.mode==='yesterday'){
+  date.setDate(date.getDate()-1);const x=iso(date);return {label:x,months:[x.slice(0,7).replace('-','')],factor:0.044};
+ }
+ if(state.mode==='lastweek'){
+  const w=(date.getDay()+6)%7;date.setDate(date.getDate()-w-7);
+  const from=iso(date),first=from.slice(0,7).replace('-','');
+  date.setDate(date.getDate()+6);const to=iso(date),last=to.slice(0,7).replace('-','');
+  return {label:from+' ～ '+to,months:monthRange(first,last),factor:0.235};
+ }
+ if(state.mode==='year'){
+  const to=state.year===dp('year')?todayMonth:state.year+'12';
+  const months=monthRange(state.year+'01',to);
+  return {label:state.year+'01 ～ '+to,months,factor:1};
+ }
+ return {label:state.month,months:[state.month],factor:1};
+}
+function aggregate(members,conf,p){
+ const people=members.length,siteCount=members.reduce((v,x)=>v+x.siteCount,0);
+ const offices=new Set(members.map(x=>x.path.slice(0,3).join('|'))).size;
+ let fyc=0,fyn=0,fyp=0,oldFyc=0,doctorFyc=0,nurseFyc=0,physicianPolicies=0,nursePolicies=0,medicalPolicies=0,
+ newCustomers=0,insured=0,groupClients=0,renewed=0,claims=0,appointments=0,unreplied=0,employees=0,joined=0,activePeople=0,qualifiedPeople=0;
+ for(const person of members){
+  const s=person.seed;
+  const months=p.months;
+  const oneFyc=months.reduce((v,m)=>v+rnd(s+'|fyc|'+m,28000,155000),0)*p.factor;
+  const old=months.reduce((v,m)=>v+rnd(s+'|fyc|'+(Number(m.slice(0,4))-1)+m.slice(4),28000,155000),0)*p.factor;
+  const oneFyn=months.reduce((v,m)=>v+rnd(s+'|fyn|'+m,3,25)/5,0)*p.factor;
+  fyc+=oneFyc;oldFyc+=old;fyn+=oneFyn;
+  fyp+=months.reduce((v,m)=>v+rnd(s+'|fyp|'+m,85000,580000),0)*p.factor;
+  const share=rnd(s+'|medshare',32,72)/100;
+  doctorFyc+=oneFyc*share;nurseFyc+=oneFyc*(1-share);
+  const f=Math.max(0.18,p.factor);
+  physicianPolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|md',1,6)));
+  nursePolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|nurse',1,6)));
+  medicalPolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|med',1,3)));
+  newCustomers+=Math.max(1,Math.round(oneFyn*rnd(s+'|new',1,5)));
+  insured+=Math.max(1,Math.round(oneFyn*rnd(s+'|insured',9,30)));
+  groupClients+=Math.max(1,Math.round(oneFyn*rnd(s+'|clients',8,24)));
+  renewed+=Math.max(1,Math.round(oneFyn*rnd(s+'|renew',1,6)));
+  claims+=Math.max(1,Math.round(months.length*f*rnd(s+'|claim',1,4)));
+  appointments+=Math.max(1,Math.round(months.length*f*rnd(s+'|appts',3,14)));
+  unreplied+=Math.max(0,Math.round(months.length*f*rnd(s+'|unreplied',0,2)));
+  employees+=rnd(s+'|employee',15,150);
+  joined+=rnd(s+'|oa',5,95);
+  activePeople+=rnd(s+'|active|'+p.label,1,100)>14?1:0;
+  qualifiedPeople+=rnd(s+'|qualified',1,100)>29?1:0;
+ }
+ const valueAt=(v)=>Math.round(v);
+ const rate=(part,total)=>total?part/total*100:0;
+ const reviewed=valueAt(siteCount*.82),met=valueAt(reviewed*.72);
+ const clientsWithGroup=valueAt(siteCount*.67);
+ const gap=Math.max(0,valueAt(siteCount*42000*p.months.length-fyc));
+ const diff=Math.max(0,valueAt(siteCount*4*p.months.length-newCustomers));
+ const attRate=rnd(conf.name+'|'+p.label+'|attendance|'+members.map(x=>x.seed).join(','),700,970)/10;
+ const returned=appointments>0?rate(appointments-unreplied,appointments):100;
+ return {
+  sites:siteCount,offices,people,fyc:valueAt(fyc),fyn:Math.round(fyn*10)/10,fyp:valueAt(fyp),
+  doctorFyc:valueAt(doctorFyc),nurseFyc:valueAt(nurseFyc),
+  yoy:oldFyc?rate(fyc-oldFyc,oldFyc):0,activePeople,activity:rate(activePeople,people),
+  qualifiedPeople,qualifiedRate:rate(qualifiedPeople,people),reviewed,met,siteRate:rate(met,reviewed),
+  insured,groupClients,renewed,newCustomers,clientsWithGroup,siteDevelopRate:rate(clientsWithGroup,siteCount),
+  physicianPolicies,nursePolicies,medicalPolicies,unqualified:people-qualifiedPeople,unqualifiedRate:rate(people-qualifiedPeople,people),
+  unqualifiedSites:siteCount-met,gap,diff,claims,employees,joined,appointments,unreplied,replyRate:returned,
+  attendance:attRate,passed:qualifiedPeople>=Math.ceil(people*.6),plantQualified:gap===0&&diff===0,
+  twoYears:rnd(conf.name+'|'+members.map(x=>x.seed).join(','),0,1)===1,
+  worksiteName:'示範駐廠 '+String(hash(conf.name+'|'+members.map(x=>x.seed).join(','))%10000).padStart(4,'0'),
+  worksiteCode:'WS'+String(hash(conf.name+'|'+members.map(x=>x.seed).join(','))).padStart(10,'0')
+ };
+}
+function metric(name,d){
+ const vals={
+ '總據點數':d.sites,'經營據點數':d.sites,'分派廠區數':d.sites,'駐廠職域數':d.sites,
+ '經營通訊處數':d.offices,'經營人員數':d.people,'經營人數':d.people,
+ 'FYC':d.fyc,'FYN':d.fyn,'FYP':d.fyp,'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,'去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
+ '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
+ '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
+ '應檢視據點數':d.reviewed,'達標據點數':d.met,'據點達標率':d.siteRate,
+ '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
+ '新加保主被保險人數':d.newCustomers,'新加保團險客戶數':Math.max(1,Math.round(d.newCustomers*.7)),
+ '團轉個客戶數':d.renewed,'有團險客戶的據點數':d.clientsWithGroup,'據點開發率':d.siteDevelopRate,
+ '預約顧問3天內回覆率':d.replyRate,'三天內回覆率':d.replyRate,'三天內回覆預約率':d.replyRate,
+ '經營是否滿2年':d.twoYears?'是':'否','年度經營人員標準是否達標':d.passed?'達標':'未達標',
+ '醫師公會FYC':d.doctorFyc,'護理師公會FYC':d.nurseFyc,
+ '醫師公會團單數':d.physicianPolicies,'護理師公會團單數':d.nursePolicies,'醫保永逸團單數':d.medicalPolicies,
+ '未達標經營人數':d.unqualified,'人員未達標率':d.unqualifiedRate,'據點團單開發率':d.siteDevelopRate,
+ '未達標經營據點數':d.unqualifiedSites,'個人是否達標':d.passed?'達標':'未達標',
+ 'FYC累月差額':d.gap,'新客戶數':d.newCustomers,'新客戶數累月差額':d.diff,
+ '達標廠區數':d.met,'廠區是否達標':d.plantQualified?'達標':'未達標','出席率':d.attendance,
+ '理賠件數':d.claims,'員工人數':d.employees,'LINE OA加入人數':d.joined,
+ 'LINE OA預約數':d.appointments,'LINE OA 未回覆預約數':d.unreplied,'出勤率':d.attendance,
+ '駐廠職域名稱':d.worksiteName,'職域代碼':d.worksiteCode
+ };
+ return Object.prototype.hasOwnProperty.call(vals,name)?vals[name]:0;
+}
+function fmt(name,v){
+ if(v===null||v===undefined||v==='')return '0';
+ if(typeof v==='string')return v;
+ if(name.includes('率'))return (name.includes('成長')&&v>0?'+':'')+v.toFixed(1)+'%';
+ if(name.includes('FYC')||name==='FYP'||name==='FYN'||name.includes('差額')){
+  if(Math.abs(v)>=1e8)return (v/1e8).toFixed(2)+'億';
+  if(Math.abs(v)>=1e4)return (v/1e4).toFixed(1)+'萬';
+ }
+ return v.toLocaleString('zh-TW',{maximumFractionDigits:1});
+}
+function linkable(conf,name,depth){
+ if(depth<3||depth>4)return false;
+ if(conf.name==='闔家安康')return name==='總據點數';
+ if(conf.name==='醫護職域')return name===(depth===3?'經營據點數':'總據點數');
+ return false;
+}
+function openDetail(conf,members,depth,pathLabel){
+ state.detail={confName:conf.name,members,depth,pathLabel};state.page=0;
+ render();
+ $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
+}
+function siteValue(col,site,p,conf){
+ const seed=site.key+'|'+p.label;
+ const city=['臺北市','新北市','桃園市','臺中市','臺南市','高雄市'][hash(site.key)%6];
+ const road=['中正路','中山路','和平路','復興路','忠孝路'][hash(site.key+'|road')%5];
+ const numeric=(lo,hi)=>rnd(seed+'|'+col,lo,hi).toLocaleString('zh-TW');
+ switch(col){
+ case '據點名稱':return (conf.name==='醫護職域'?'示範醫療據點 ':'示範合作據點 ')+String(hash(site.key)%10000).padStart(4,'0');
+ case '據點代碼':case '職域代碼':return site.code;
+ case '據點地址':return city+'示範區'+road+rnd(site.key+'|no',1,280)+'號（模擬）';
+ case '據點類型':return ['企業員工','社區服務','合作企業'][hash(site.key+'|type')%3];
+ case '適用的據點評核標準':return ['A級','B級','一般'][hash(site.key+'|grade')%3]+'模擬標準';
+ case '據點評核時間點':return p.months.at(-1).slice(0,4)+'/12';
+ case '據點評核達標現況(1=達標、0=尚未達標)':return String(rnd(site.key+'|qualified',0,1));
+ case '據點評核團單主被保人數目標':return numeric(80,350);
+ case '今年個險保單數':return numeric(6,45);
+ case '據點人數':return numeric(100,1600);
+ case '經營人員數':case '經營人數':return numeric(1,9);
+ case 'FYC':return numeric(25000,250000);
+ case '醫師公會FYC':return numeric(15000,140000);
+ case '護理師公會FYC':return numeric(12000,115000);
+ case '團險主被保險人數':return numeric(30,550);
+ case '團險客戶數(含眷屬)':return numeric(80,800);
+ case '新加保主被保險人數':return numeric(3,70);
+ case '醫師公會團單數':case '護理師公會團單數':case '醫保永逸團單數':return numeric(1,17);
+ default:return numeric(1,200);
+ }
+}
+function detailSection(conf,p){
+ const data=state.detail;
+ const sites=data.members.flatMap(sampleSites);
+ const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
+ const head=el('div','np-domain-head'),heading=el('div','np-domain-title');
+ heading.append(el('h2','',conf.name+'｜'+data.depth+'.5 據點資訊'),
+ el('p','',data.pathLabel+' · '+sites.length+' 筆模擬據點'));
+ const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
+ back.type='button';back.onclick=()=>{state.detail=null;render()};
+ head.append(heading,back);sec.append(head);
+ const cols=data.depth===3?conf.sites3:conf.sites4;
+ const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
+ tr.append(el('th','','序號'));cols.forEach(x=>tr.append(el('th','',x)));
+ thead.append(tr);table.append(thead);
+ const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(sites.length/pageSize)-1);
+ state.page=Math.min(state.page,lastPage);
+ sites.slice(state.page*pageSize,(state.page+1)*pageSize).forEach((site,i)=>{
+  const row=el('tr');row.append(el('td','',state.page*pageSize+i+1));
+  cols.forEach(c=>row.append(el('td','',siteValue(c,site,p,conf))));tb.append(row);
+ });
+ table.append(tb);wrap.append(table);sec.append(wrap);
+ if(lastPage){
+  const bar=el('div','np-pager');
+  const prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');
+  prev.type='button';next.type='button';prev.disabled=state.page===0;next.disabled=state.page===lastPage;
+  prev.onclick=()=>{state.page--;render()};next.onclick=()=>{state.page++;render()};
+  bar.append(prev,el('span','','第 '+(state.page+1)+' / '+(lastPage+1)+' 頁（共 '+sites.length+' 筆）'),next);sec.append(bar);
+ }
+ sec.append(el('p','np-footnote','DEMO：據點名稱、代碼、地址、績效和評核狀態皆為模擬數據，不代表真實資料。'));
+ return sec;
+}
+function section(conf,p){
+ if(state.detail&&state.detail.confName===conf.name)return detailSection(conf,p);
+ const members=currentMembers(conf),depth=Math.min(4,state.path.length+1),d=aggregate(members,conf,p);
+ const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
+ const head=el('div','np-domain-head'),title=el('div','np-domain-title');
+ title.append(el('h2','',conf.name),el('p','',conf.desc+' · DEMO 模擬數據'));
+ head.append(title,el('span','np-pill','第 '+depth+' 層｜'+['','區域中心','業務區','通訊處','業務員'][depth]));sec.append(head);
+ const cols=conf.levels[depth],cards=el('div','np-cards');
+ const highlights=cols.filter(x=>!['駐廠職域名稱','職域代碼','經營是否滿2年','個人是否達標','廠區是否達標','年度經營人員標準是否達標'].includes(x)).slice(0,4);
+ for(const name of highlights){
+  const card=el('div','np-metric'),number=fmt(name,metric(name,d));
+  card.append(el('span','',name));
+  if(linkable(conf,name,depth)){
+   const button=el('button','np-number-link',number);button.type='button';
+   button.title='查看 '+depth+'.5 層模擬據點明細';
+   button.onclick=()=>openDetail(conf,members,depth,state.path.join(' / ')||'全部組織');
+   card.append(button);
+  }else card.append(el('strong','',number));
+  card.append(el('small','','模擬資料'));cards.append(card);
+ }
+ sec.append(cards);
+ const h=el('div','np-table-head'),left=el('div');
+ left.append(el('strong','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]+'績效明細'),
+ el('small','','依參考 Excel 各層級欄位顯示'));
+ h.append(left);sec.append(h);
+ const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
+ tr.append(el('th','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]));
+ cols.forEach(col=>tr.append(el('th','',col)));
+ thead.append(tr);table.append(thead);
+ const tb=el('tbody');
+ const parts=state.path.length===4?[[state.path[3],members]]:groups(members,state.path.length);
+ for(const [label,group] of parts){
+  const row=el('tr'),name=el('td','np-level-name');
+  if(state.path.length<4){
+   const btn=el('button','np-link',label+'　›');btn.type='button';
+   btn.title='查看下一層績效';
+   btn.onclick=()=>{state.path.push(label);state.detail=null;render();window.scrollTo(0,0)};
+   name.append(btn);
+  }else name.textContent=label;
+  row.append(name);
+  const stats=aggregate(group,conf,p);
+  for(const col of cols){
+   const cell=el('td'),number=fmt(col,metric(col,stats));
+   if(linkable(conf,col,depth)){
+    const btn=el('button','np-number-link',number);btn.type='button';
+    btn.title='點擊進入 '+depth+'.5 層據點明細';
+    btn.onclick=()=>openDetail(conf,group,depth,[...state.path,label].join(' / '));
+    cell.append(btn);
+   }else cell.textContent=number;
+   row.append(cell);
   }
+  tb.append(row);
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
- const footer=ui('p','np-footnote','「—」為未取得對應來源，並非 0。FYC／FYN 取已匯入月度業績；據點數取目前名冊（非歷史月末值）。經營人數與實動率採已匯入資料中的人員去重計算，並非全員名冊。');
- sec.append(footer);return sec;
+ sec.append(el('p','np-footnote','此頁全部指標為固定規則生成的 DEMO 模擬資料；各月、年度、昨日及上週均非正式營運實績。'));
+ return sec;
 }
-function renderBreadcrumb(){
- const root=$('npBreadcrumb');root.replaceChildren();
- const mk=(name,n)=>{const btn=ui('button','np-crumb',name);btn.type='button';btn.disabled=state.path.length===n;btn.addEventListener('click',()=>{state.path=state.path.slice(0,n);state.sites=false;render();});root.append(btn);};
- mk('通路總計',0);
- for(let i=0;i<state.path.length;i++){root.append(ui('span','np-crumb-divider','›'));mk(state.path[i],i+1);}
+function breadcrumb(){
+ const nav=$('npBreadcrumb');nav.replaceChildren();
+ const add=(label,i)=>{
+  const btn=el('button','np-crumb',label);btn.type='button';
+  btn.disabled=state.path.length===i&&!state.detail;
+  btn.onclick=()=>{state.path=state.path.slice(0,i);state.detail=null;render()};
+  nav.append(btn);
+ };
+ add('通路總計',0);
+ state.path.forEach((name,i)=>{nav.append(el('span','np-crumb-divider','›'));add(name,i+1)});
+ if(state.detail)nav.append(el('span','np-crumb-divider','›'),el('span','np-crumb-current',state.detail.confName+' '+state.detail.depth+'.5 據點明細'));
 }
 function render(){
- const current=$('newPerformance');if(!current)return;
- if(actualReady&&state.month===nowMonth&&latestSourceMonth&&latestSourceMonth<nowMonth)state.month=latestSourceMonth;
- const tabs=document.querySelectorAll('[data-np-mode]');
- tabs.forEach(btn=>{const active=btn.dataset.npMode===state.mode;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));});
+ if(!root)return;
+ document.querySelectorAll('[data-np-mode]').forEach(btn=>{
+  const active=btn.dataset.npMode===state.mode;btn.classList.toggle('active',active);
+  btn.setAttribute('aria-pressed',String(active));
+ });
  $('npMonthBox').hidden=state.mode!=='month';$('npYearBox').hidden=state.mode!=='year';
  $('npMonth').value=state.month;$('npYear').value=state.year;
  $('npCount').textContent=state.selected.size+'/4';
- renderBreadcrumb();
- const sections=$('npSections'),notice=$('npNotice');sections.replaceChildren();notice.hidden=true;
- $('npSource').textContent=actualReady?'最新已匯入：'+latestSourceMonth:loadingIssue?'來源載入失敗':'來源資料載入中';
- if(state.mode==='yesterday'||state.mode==='lastweek'){
-  $('npRange').textContent=(state.mode==='yesterday'?'昨日':'上週')+'：'+labelRange();
-  notice.textContent='目前原始資料只有 YYYYMM 工作月，缺少每日交易日期，無法準確呈現'+(state.mode==='yesterday'?'昨日':'上週')+'績效。已保留操作介面，待日別資料接入後提供實績；不以月累計假冒日／週資料。';
-  notice.hidden=false;return;
+ $('npSource').textContent='DEMO 模擬數據｜固定值，非真實業績';
+ breadcrumb();
+ const sections=$('npSections'),msg=$('npNotice');sections.replaceChildren();msg.hidden=true;
+ if(state.mode==='month'&&!/^[0-9]{4}(0[1-9]|1[0-2])$/.test(state.month)){
+  $('npRange').textContent='請輸入 YYYYMM';msg.textContent='請輸入有效年月，例如 202611。';msg.hidden=false;return;
  }
- if(!actualReady){$('npRange').textContent='讀取資料中';notice.textContent=loadingIssue?'讀取來源失敗：'+loadingIssue:'正在讀取已匯入的 2025／2026 年職域業績與名冊…';notice.hidden=false;return;}
- const [a,b]=periods();
- if(state.mode==='month'&&(!monthPattern.test(state.month)||!actualManifest.shards.some(x=>x.month===state.month))){
-  $('npRange').textContent='請選擇有效月份';notice.textContent='該月份尚未匯入。請輸入已匯入的 YYYYMM，例如 '+latestSourceMonth+'。';notice.hidden=false;return;
- }
- if(state.mode==='year'&&!actualManifest.shards.some(x=>x.month.startsWith(state.year))){
-  $('npRange').textContent='無年度資料';notice.textContent='選定年度尚未匯入資料。';notice.hidden=false;return;
- }
- $('npRange').textContent='統計期間：'+a+' ～ '+b;
- if(!state.selected.size){notice.textContent='請從右上角的篩選器選擇至少一種職域。';notice.hidden=false;return;}
- for(const cfg of C)if(state.selected.has(cfg.name))sections.append(makeSection(cfg,a,b));
+ const p=period();$('npRange').textContent=p.label+'｜模擬';
+ if(!state.selected.size){msg.textContent='請從右上角選擇至少一種職域。';msg.hidden=false;return}
+ for(const conf of C)if(state.selected.has(conf.name))sections.append(section(conf,p));
 }
 function init(){
- const checks=$('npOptions');
- for(const config of C){
-  const label=ui('label','np-check'),check=document.createElement('input');check.type='checkbox';check.checked=true;check.value=config.name;check.addEventListener('change',()=>{if(check.checked)state.selected.add(config.name);else state.selected.delete(config.name);render();});
-  const dot=ui('i');dot.style.background=config.color;label.append(check,dot,document.createTextNode(config.name));checks.append(label);
+ const root=$('npOptions');
+ for(const conf of C){
+  const label=el('label','np-check'),check=document.createElement('input');check.type='checkbox';
+  check.value=conf.name;check.checked=true;
+  check.onchange=()=>{check.checked?state.selected.add(conf.name):state.selected.delete(conf.name);
+   if(state.detail&&!state.selected.has(state.detail.confName))state.detail=null;render()};
+  const dot=el('i');dot.style.background=conf.color;
+  label.append(check,dot,document.createTextNode(conf.name));root.append(label);
  }
- const toggle=$('npTrigger'),popup=$('npPopup');
- const close=()=>{popup.hidden=true;toggle.setAttribute('aria-expanded','false');};
- toggle.addEventListener('click',()=>{popup.hidden=!popup.hidden;toggle.setAttribute('aria-expanded',String(!popup.hidden));});
- document.addEventListener('click',e=>{if(!$('npFilter').contains(e.target))close();});
- document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
- for(const [id,yes] of [['npAll',true],['npNone',false]]){
-  $(id).addEventListener('click',()=>{state.selected=new Set(yes?C.map(c=>c.name):[]);checks.querySelectorAll('input').forEach(x=>x.checked=yes);render();});
+ const trigger=$('npTrigger'),popup=$('npPopup'),close=()=>{popup.hidden=true;trigger.setAttribute('aria-expanded','false')};
+ trigger.onclick=()=>{popup.hidden=!popup.hidden;trigger.setAttribute('aria-expanded',String(!popup.hidden))};
+ document.addEventListener('click',e=>{if(!$('npFilter').contains(e.target))close()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+ for(const [id,on] of [['npAll',true],['npNone',false]]){
+  $(id).onclick=()=>{state.selected=new Set(on?C.map(x=>x.name):[]);
+   root.querySelectorAll('input').forEach(x=>x.checked=on);
+   if(state.detail&&!state.selected.has(state.detail.confName))state.detail=null;render()};
  }
- document.querySelectorAll('[data-np-mode]').forEach(btn=>btn.addEventListener('click',()=>{state.mode=btn.dataset.npMode;state.path=[];state.sites=false;render();}));
- $('npMonth').addEventListener('input',e=>{state.month=e.target.value.replace(/\D/g,'').slice(0,6);if(state.month.length===6)render();});
- $('npMonth').addEventListener('change',render);
- $('npYear').addEventListener('change',e=>{state.year=e.target.value;state.path=[];state.sites=false;render();});
+ document.querySelectorAll('[data-np-mode]').forEach(btn=>btn.onclick=()=>{
+  state.mode=btn.dataset.npMode;state.path=[];state.detail=null;render();
+ });
+ $('npMonth').oninput=e=>{state.month=e.target.value.replace(/\D/g,'').slice(0,6);
+  if(state.month.length===6){state.detail=null;render()}};
+ $('npMonth').onchange=render;
+ $('npYear').onchange=e=>{state.year=e.target.value;state.detail=null;state.path=[];render()};
  render();
 }
 window.renderNewPerformance=render;
