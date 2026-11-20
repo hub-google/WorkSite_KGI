@@ -275,6 +275,15 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 #newPerformance [hidden]{display:none!important}
 @media(max-width:1000px){.np-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.np-toolbar{padding:14px;flex-wrap:wrap;gap:10px}.np-tab{padding:10px 11px;font-size:13px}.np-tabs{gap:6px}.np-filter{margin-left:auto}.np-filter-panel{right:0}.np-domain{padding:15px}.np-cards{gap:8px}.np-metric{padding:12px}.np-metric strong{font-size:21px}.np-domain-head{flex-wrap:wrap}.np-info{text-align:left}}
+
+.np-number-link{border:0;background:transparent;padding:2px 0;color:#116ba3;font:inherit;font-weight:800;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer}
+.np-number-link:hover{color:#073e70}
+.np-number-link:focus-visible{outline:2px solid #237fb3;outline-offset:3px;border-radius:4px}
+.np-metric .np-number-link{display:block;font-size:25px;line-height:1.7;font-variant-numeric:tabular-nums;text-align:left}
+.np-pager{display:flex;justify-content:flex-end;gap:10px;align-items:center;margin:13px 0 0;color:#647a8b;font-size:13px}
+.np-pager button:disabled{opacity:.5;cursor:default}
+.np-crumb-current{font-size:13px;font-weight:700;color:#285e80}
+@media(max-width:650px){.np-metric .np-number-link{font-size:21px}.np-pager{justify-content:center}}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -1230,7 +1239,7 @@ function showView(name){
  }
  byId('pagetitle').textContent=name;
  document.title=name+'｜職域經營平台';
- document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報'||name==='新績效管理';
+ document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報';
  byId('performance').hidden=name!=='績效管理';
  byId('newPerformance').hidden=name!=='新績效管理';
  byId('resources').hidden=name!=='經營資源';
@@ -1299,4 +1308,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261120"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261120b"></script></body></html>
