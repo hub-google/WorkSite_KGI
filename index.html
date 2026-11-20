@@ -214,6 +214,67 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 
 
 
+
+/* New performance dashboard, isolated from the legacy performance table. */
+#newPerformance{max-width:1500px;margin:0 auto}
+.np-toolbar{display:flex;align-items:flex-start;gap:16px;justify-content:space-between;background:white;border:1px solid #dfe8f1;border-radius:18px;padding:18px 20px;box-shadow:0 8px 24px #20385108}
+.np-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.np-tab{background:#eef4fa;border:1px solid #d8e5ee;border-radius:10px;padding:11px 18px;color:#48657e;font-weight:750;min-height:44px}
+.np-tab.active{background:#245a85;border-color:#245a85;color:white}
+.np-period-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;color:#567086;font-weight:650}
+.np-period-box label{display:flex;align-items:center;gap:10px}
+.np-period-box input,.np-period-box select{border:1px solid #cad9e5;border-radius:10px;min-width:130px;height:42px;padding:8px 12px;color:#1d3c59;background:white}
+.np-period-box input{width:150px}
+.np-date-caption{font-size:13px;font-weight:500;color:#8296a8}
+.np-filter{position:relative;flex:0 0 auto}
+.np-filter-trigger{background:white;border:1px solid #cddce9;border-radius:10px;padding:11px 15px;color:#235778;font-weight:750;min-height:44px;white-space:nowrap}
+.np-filter-trigger:hover{background:#edf6fa}
+.np-filter-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:55;min-width:260px;background:white;border:1px solid #d8e5ef;border-radius:14px;padding:16px;box-shadow:0 18px 46px #12314e2e}
+.np-filter-panel strong{font-size:15px}
+.np-filter-panel p{font-size:12px;color:#8296a9;margin:4px 0 13px}
+.np-filter-tools{display:flex;gap:8px;margin-bottom:12px}
+.np-filter-tools button,.np-plain{border:1px solid #d5e2ee;border-radius:8px;background:#f5f9fc;padding:7px 10px;color:#2a5c80;font-size:13px}
+.np-options{display:grid;gap:8px}
+.np-check{display:flex;align-items:center;gap:10px;padding:7px 4px;cursor:pointer}
+.np-check input{width:17px;height:17px;accent-color:#285e89}
+.np-check i{width:10px;height:10px;border-radius:3px}
+.np-overview{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:12px;margin:17px 0}
+.np-crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.np-crumb{border:0;background:transparent;color:#27658e;font-weight:700;padding:6px 3px}
+.np-crumb:disabled{color:#6b8091;cursor:default}
+.np-crumb-divider{color:#a3b3c1}
+.np-info{font-size:12px;color:#758b9e;text-align:right}
+.np-notice{background:#fff9e9;border:1px solid #f0dbab;border-radius:12px;color:#745629;padding:20px;margin-top:14px;line-height:1.8}
+.np-domains{display:grid;gap:20px;margin:0 0 36px}
+.np-domain{background:white;border:1px solid #dee8f0;border-radius:17px;padding:21px 22px;box-shadow:0 8px 24px #27405b08;min-width:0}
+.np-domain-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-left:5px solid var(--np-accent);padding-left:14px;margin-bottom:20px}
+.np-domain-title h2{font-size:21px;margin:0 0 5px;color:#1c3a54}
+.np-domain-title p{margin:0;font-size:13px;color:#8399ab}
+.np-pill{background:#eef4fa;border-radius:999px;padding:6px 11px;color:#4f7290;font-size:12px;white-space:nowrap}
+.np-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:21px}
+.np-metric{background:#f6f9fc;border:1px solid #e3ebf3;border-radius:12px;padding:17px 16px;min-width:0}
+.np-metric span,.np-metric small{display:block;color:#668299;font-size:12px}
+.np-metric strong{display:block;font-size:25px;line-height:1.7;color:#214667;font-variant-numeric:tabular-nums;white-space:nowrap}
+.np-metric small{font-size:11px;color:#91a2b0}
+.np-table-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+.np-table-head strong{display:block;font-size:16px;color:#294964}
+.np-table-head small{display:block;color:#8a9bab;font-size:12px;margin-top:3px}
+.np-table-wrap{overflow:auto;border:1px solid #e0eaf2;border-radius:11px;max-width:100%}
+.np-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;white-space:nowrap}
+.np-table th{position:sticky;top:0;background:#eaf3f9;color:#345b75;text-align:right;padding:13px 14px;border-bottom:1px solid #cfdfe9;font-weight:750;z-index:1}
+.np-table th:first-child,.np-table td:first-child{text-align:left;position:sticky;left:0;z-index:2;min-width:138px}
+.np-table th:first-child{z-index:3;background:#eaf3f9}
+.np-table td{padding:12px 14px;border-bottom:1px solid #edf1f5;text-align:right;font-variant-numeric:tabular-nums;background:white}
+.np-table tbody tr:hover td{background:#f4f9fd}
+.np-table tr:last-child td{border-bottom:none}
+.np-table .np-level-name{font-weight:700;color:#335b77}
+.np-table .np-empty{text-align:center;color:#8195a6;padding:30px;white-space:normal}
+.np-link{background:transparent;border:0;color:#1e6d9e;padding:0;font-weight:750;text-align:left;white-space:nowrap}
+.np-link:hover{text-decoration:underline}
+.np-footnote{font-size:11.5px;color:#8498a9;margin:12px 0 0;line-height:1.8}
+#newPerformance [hidden]{display:none!important}
+@media(max-width:1000px){.np-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.np-toolbar{padding:14px;flex-wrap:wrap;gap:10px}.np-tab{padding:10px 11px;font-size:13px}.np-tabs{gap:6px}.np-filter{margin-left:auto}.np-filter-panel{right:0}.np-domain{padding:15px}.np-cards{gap:8px}.np-metric{padding:12px}.np-metric strong{font-size:21px}.np-domain-head{flex-wrap:wrap}.np-info{text-align:left}}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -226,8 +287,39 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
   } catch(e) { /* 非必要功能，失敗不影響頁面 */ }
 })();
 </script></head><body>
-<div class="closecover" id="cover"></div><aside class="sidebar" id="sidebar"><div class="brand"><span>W</span>職域經營平台</div><div class="navhint">功能選單</div><a class="nav" href="/WorkSite_KGI/news/" data-view="最新消息">◉　最新消息</a><a class="nav" href="/WorkSite_KGI/resources/" data-view="經營資源">▤　經營資源</a><a class="nav" href="/WorkSite_KGI/stories/" data-view="達人經驗談">✦　達人經驗談</a><a class="nav active" href="/WorkSite_KGI/performance/" data-view="績效管理">▥　績效管理</a><a class="nav" href="/WorkSite_KGI/worksite-report/" data-view="職域新增、調整、刪除回報">✎　職域新增、調整、刪除回報</a><div class="navhint"></div></aside>
-<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 資料為模擬資料</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始月份</label><input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="YYYYMM" autocomplete="off" id="start"></div><div class="field"><label for="end">結束月份</label><input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="YYYYMM" autocomplete="off" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span><span class="period" id="realDataStatus">載入 2025／2026 真實職域資料中…</span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料依 Excel 來源列的商品別／繳別／年期／商品名稱分類加總，包含可能的負向沖銷，總計與統計表一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處以 2025／2026 Excel 原始列且 AQ=1 統計，工作月取 C 欄，保單號碼僅顯示 J 欄最後四碼；一張保單可能有多筆業績。</p></div></dialog><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
+<div class="closecover" id="cover"></div><aside class="sidebar" id="sidebar"><div class="brand"><span>W</span>職域經營平台</div><div class="navhint">功能選單</div><a class="nav" href="/WorkSite_KGI/news/" data-view="最新消息">◉　最新消息</a><a class="nav" href="/WorkSite_KGI/resources/" data-view="經營資源">▤　經營資源</a><a class="nav" href="/WorkSite_KGI/stories/" data-view="達人經驗談">✦　達人經驗談</a><a class="nav active" href="/WorkSite_KGI/performance/" data-view="績效管理">▥　績效管理</a><a class="nav" href="/WorkSite_KGI/new-performance/" data-view="新績效管理">▣　新績效管理</a><a class="nav" href="/WorkSite_KGI/worksite-report/" data-view="職域新增、調整、刪除回報">✎　職域新增、調整、刪除回報</a><div class="navhint"></div></aside>
+<div class="main"><header class="top"><button class="hamb" id="hamb" aria-label="展開或收合功能選單" aria-expanded="false">☰</button><b>職域經營平台</b><span class="version-stamp" id="versionStamp">資料更新時間：2026-10-20 14:30:39</span></header><main class="content"><div class="eyebrow"></div><div class="pagehead"><div><h1 id="pagetitle">績效管理</h1><p class="sub" id="subtitle">組織績效總覽 · 逐層查看各職域經營成果</p></div><span class="demo">● 資料為模擬資料</span></div><section id="performance"><div class="panel filter"><div class="field"><label for="start">開始月份</label><input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="YYYYMM" autocomplete="off" id="start"></div><div class="field"><label for="end">結束月份</label><input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="YYYYMM" autocomplete="off" id="end"></div><button class="primary" id="apply">套用篩選</button><span class="period" id="period"></span><span class="period" id="realDataStatus">載入 2025／2026 真實職域資料中…</span></div><section class="panel dashboard-panel" id="summaryDashboard" hidden><div class="dashboard-heading"><div><strong id="dashboardTitle">通路總計儀表板</strong></div><div class="chart-selector"><label for="chartMetricFilter">圖表篩選</label><select id="chartMetricFilter" aria-label="選擇業績組成圖表"><option value="FYC">FYC</option><option value="FYN">FYN</option><option value="保費">保費</option></select></div><div class="metricbox dashboard-metricbox"><button type="button" class="outline" id="dashboardMetricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="dashboardMetricMenu" hidden><h3>選擇顯示指標</h3><div id="dashboardMetricChecks"></div></div></div></div><div class="dashboard-grid" id="dashboardGrid"></div><div class="yoy-wrap" id="yoyWrap"><div class="yoy-header"><h2>職域業績同期比較</h2><p id="yoyPeriod"></p></div><div class="yoy-grid" id="yoyGrid"></div></div></section><section class="panel"><div class="headrow"><div><strong id="leveltitle">通路總計</strong><nav class="breadcrumbs" id="crumb" aria-label="組織層級路徑"></nav></div><div class="head-actions"><button type="button" class="outline" id="policyDetailBtn" hidden>保單明細</button><div class="org-filter" id="orgFilterRoot"><button type="button" class="header-filter-trigger" id="orgFilterBtn" aria-label="篩選組織" title="篩選組織" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="orgFilterMenu" class="org-filter-panel" hidden><h3 id="orgFilterTitle">選擇組織</h3><p>可複選，圖表與統計表同步篩選。</p><div class="org-filter-tools"><button type="button" id="orgFilterAll">全選</button><button type="button" id="orgFilterNone">取消全選</button></div><div id="orgFilterList" class="org-filter-list"></div></div></div><div class="org-filter" id="domainFilterRoot"><button type="button" class="header-filter-trigger" id="domainFilterBtn" aria-label="篩選職域" aria-expanded="false" title="篩選職域"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16L14 12v6l-4 2v-8L4 5Z"/></svg></button><div id="domainFilterMenu" class="org-filter-panel" hidden><h3>選擇職域</h3><p>可複選，圖表與表格同步更新。</p><div class="org-filter-tools"><button type="button" id="domainFilterAll">全選</button><button type="button" id="domainFilterNone">取消全選</button></div><div class="org-filter-list" id="domainFilterList"></div></div></div><div class="metricbox"><button class="outline" id="metricBtn" aria-expanded="false">☷　顯示／隱藏指標 ▾</button><div class="metricmenu" id="metricMenu" hidden><h3>選擇顯示指標</h3><div id="metricChecks"></div></div></div></div></div><div class="tablewrap" role="region" aria-label="績效資料表格，可橫向捲動" tabindex="0"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div></section></section><dialog id="metricDetailDialog" class="kpi-dialog" aria-labelledby="detailTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="detailTitle">分類統計</h2><p class="detail-subtitle" id="detailScope"></p></div><button type="button" id="detailClose" class="detail-close" aria-label="關閉視窗">×</button></div><div class="detail-controls"><label for="detailDimension">統計欄位</label><select id="detailDimension"><option value="kind">商品別</option><option value="payment">繳別</option><option value="term">年期</option><option value="name">商品名稱</option></select><strong class="detail-total" id="detailTotal"></strong></div><table class="detail-table"><thead><tr><th id="detailCategory">商品別</th><th style="text-align:right">業績加總</th><th style="text-align:right">占比</th><th style="width:25%">占比圖</th></tr></thead><tbody id="detailRows"></tbody></table><p id="detailEmpty" class="org-filter-empty" hidden>此範圍無符合的資料。</p><p class="detail-foot">此資料依 Excel 來源列的商品別／繳別／年期／商品名稱分類加總，包含可能的負向沖銷，總計與統計表一致。</p></div></dialog><dialog id="policyDetailDialog" class="kpi-dialog policy-dialog" aria-labelledby="policyTitle"><div class="detail-body"><div class="detail-top"><div><h2 id="policyTitle">保單明細</h2><p class="detail-subtitle" id="policyScope"></p></div><button type="button" id="policyClose" class="detail-close" aria-label="關閉保單明細">×</button></div><div class="policy-controls"><label for="policyAgent">業務員</label><select id="policyAgent" aria-label="選擇業務員"></select><strong id="policyCount" class="policy-count"></strong></div><div class="policy-table-wrap"><table class="policy-table"><thead><tr><th>職域</th><th>工作月</th><th>保單號碼（後 4 碼）</th></tr></thead><tbody id="policyRows"></tbody></table><p id="policyEmpty" class="org-filter-empty" hidden>此業務員在選定期間沒有納入職域FYN的保單。</p></div><p id="policyConsistency" class="policy-reconcile"></p><p class="detail-foot">此處以 2025／2026 Excel 原始列且 AQ=1 統計，工作月取 C 欄，保單號碼僅顯示 J 欄最後四碼；一張保單可能有多筆業績。</p></div></dialog>
+<section id="newPerformance" hidden aria-label="新績效管理">
+ <div class="np-toolbar">
+  <div>
+   <div class="np-tabs" role="group" aria-label="統計期間">
+    <button class="np-tab" data-np-mode="yesterday" type="button">昨日</button>
+    <button class="np-tab" data-np-mode="lastweek" type="button">上週</button>
+    <button class="np-tab active" data-np-mode="month" type="button">各月</button>
+    <button class="np-tab" data-np-mode="year" type="button">年度</button>
+   </div>
+   <div class="np-period-box">
+    <label id="npMonthBox" for="npMonth">選擇月份 <input id="npMonth" type="text" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="YYYYMM" aria-label="月份 YYYYMM"></label>
+    <label id="npYearBox" for="npYear" hidden>選擇年度 <select id="npYear"><option value="2026">2026</option><option value="2025">2025</option></select></label>
+    <span class="np-date-caption" id="npRange" aria-live="polite">讀取月份中…</span>
+   </div>
+  </div>
+  <div class="np-filter" id="npFilter">
+   <button type="button" id="npTrigger" class="np-filter-trigger" aria-expanded="false" aria-controls="npPopup">☷　篩選職域 <span id="npCount">4/4</span> ▾</button>
+   <div id="npPopup" class="np-filter-panel" hidden>
+    <strong>職域類別</strong><p>勾選要顯示的職域，可複選。</p>
+    <div class="np-filter-tools"><button type="button" id="npAll">全部顯示</button><button type="button" id="npNone">全部取消</button></div>
+    <div id="npOptions" class="np-options"></div>
+   </div>
+  </div>
+ </div>
+ <div class="np-overview">
+  <nav class="np-crumbs" id="npBreadcrumb" aria-label="新績效管理組織層級"></nav>
+  <div class="np-info"><span id="npSource">資料來源載入中</span></div>
+ </div>
+ <div id="npNotice" class="np-notice" role="status" hidden></div>
+ <div id="npSections" class="np-domains"></div>
+</section><section id="resources" hidden><p class="resources-intro">常用職域經營工具與行政服務集中入口。以下先提供操作流程示範，正式申請及預約功能尚未串接。</p><div class="resource-grid">
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▤</div><span class="resource-tag">活動補助 · DEMO</span><h2>客說會補助申請</h2><p>辦理職域客戶說明會時，快速了解活動補助申請方式、準備資料與核銷流程。</p><details><summary>查看示範流程 ▾</summary><ol><li>填寫活動名稱、日期、地點與預估人數。</li><li>準備活動規劃與預算資料。</li><li>提交主管審核後，依規定辦理核銷。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▣</div><span class="resource-tag">行政服務 · DEMO</span><h2>識別證補發</h2><p>協助駐廠或職域服務人員查詢識別證遺失、損壞及補發所需的申請步驟。</p><details><summary>查看示範流程 ▾</summary><ol><li>選擇遺失、毀損或資料異動原因。</li><li>準備申請人與服務據點基本資料。</li><li>送出補發申請並等待窗口通知領取。</li></ol></details></article>
 <article class="resource-card"><div class="resource-icon" aria-hidden="true">▢</div><span class="resource-tag">客戶經營 · DEMO</span><h2>LINE客戶預約活動</h2><p>示範如何透過 LINE 邀請職域客戶預約諮詢、講座或定期服務活動。</p><details><summary>查看示範流程 ▾</summary><ol><li>設定活動主題、時段及可預約名額。</li><li>透過 LINE 分享預約資訊給客戶。</li><li>確認預約名單並安排活動提醒。</li></ol></details></article>
@@ -472,8 +564,8 @@ async function loadActualData(){
   try{await loadWorksiteData()}catch(e){siteWarning='；職域名冊讀取失敗：'+String(e.message||e);console.error(e)}
   // Data source loaded; omit raw record counts and technical metadata from UI.
   status.textContent='';status.removeAttribute('title');status.hidden=true;
-  render();
- }catch(e){loadingIssue=String(e.message||e);status.hidden=false;status.textContent='真實資料讀取失敗：'+loadingIssue;render()}
+  render();window.renderNewPerformance?.();
+ }catch(e){loadingIssue=String(e.message||e);status.hidden=false;status.textContent='真實資料讀取失敗：'+loadingIssue;render();window.renderNewPerformance?.()}
 }
 function inWorkMonthRange(month,a,b){
  return month>=a&&month<=b;
@@ -1120,6 +1212,7 @@ const PAGE_ROUTES={
  '經營資源':'resources',
  '達人經驗談':'stories',
  '績效管理':'performance',
+ '新績效管理':'new-performance',
  '職域新增、調整、刪除回報':'worksite-report'
 };
 let performanceInitialized=false;
@@ -1137,20 +1230,22 @@ function showView(name){
  }
  byId('pagetitle').textContent=name;
  document.title=name+'｜職域經營平台';
- document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報';
+ document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報'||name==='新績效管理';
  byId('performance').hidden=name!=='績效管理';
+ byId('newPerformance').hidden=name!=='新績效管理';
  byId('resources').hidden=name!=='經營資源';
  byId('stories').hidden=name!=='達人經驗談';
  byId('news').hidden=name!=='最新消息';
  byId('worksiteReport').hidden=name!=='職域新增、調整、刪除回報';
  byId('placeholder').hidden=true;
  byId('subtitle').hidden=name==='職域新增、調整、刪除回報';
- byId('subtitle').textContent=name==='績效管理'?'組織績效總覽 · 逐層查看各職域經營成果':name==='經營資源'?'職域經營常用資源與服務入口':name==='達人經驗談'?'職域經營經驗分享 · 實戰技巧 DEMO':name==='職域新增、調整、刪除回報'?'':name==='最新消息'?'最新公告與重要職域資訊 · DEMO':'';
- if(name==='績效管理'&&!performanceInitialized){
+ byId('subtitle').textContent=name==='新績效管理'?'依職域類別查看專屬指標 · 支援各組織階層鑽取':name==='績效管理'?'組織績效總覽 · 逐層查看各職域經營成果':name==='經營資源'?'職域經營常用資源與服務入口':name==='達人經驗談'?'職域經營經驗分享 · 實戰技巧 DEMO':name==='職域新增、調整、刪除回報'?'':name==='最新消息'?'最新公告與重要職域資訊 · DEMO':'';
+ if((name==='績效管理'||name==='新績效管理')&&!performanceInitialized){
   performanceInitialized=true;
   render();
   loadActualData();
  }
+ if(name==='新績效管理')window.renderNewPerformance?.();
 }
 for(const nav of document.querySelectorAll('.nav')){
  nav.addEventListener('click',e=>{
@@ -1204,4 +1299,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261120"></script></body></html>
