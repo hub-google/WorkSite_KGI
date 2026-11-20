@@ -219,7 +219,7 @@ function fmt(name,v){
 function linkable(conf,name,depth){
  if(depth<3||depth>4)return false;
  if(conf.name==='闔家安康')return name==='總據點數';
- if(conf.name==='醫護職域')return name===(depth===3?'經營據點數':'總據點數');
+ if(conf.name==='醫護職域')return name==='總據點數';
  return false;
 }
 function openDetail(conf,members,depth,pathLabel){
@@ -235,9 +235,9 @@ function siteValue(col,site,p,conf){
  switch(col){
  case '據點名稱':return (conf.name==='醫護職域'?'示範醫療據點 ':'示範合作據點 ')+String(hash(site.key)%10000).padStart(4,'0');
  case '據點代碼':case '職域代碼':return site.code;
- case '據點地址':return city+'示範區'+road+rnd(site.key+'|no',1,280)+'號（模擬）';
+ case '據點地址':return city+'示範區'+road+rnd(site.key+'|no',1,280)+'號';
  case '據點類型':return ['企業員工','社區服務','合作企業'][hash(site.key+'|type')%3];
- case '適用的據點評核標準':return ['A級','B級','一般'][hash(site.key+'|grade')%3]+'模擬標準';
+ case '適用的據點評核標準':return ['A級','B級','一般'][hash(site.key+'|grade')%3]+'標準';
  case '據點評核時間點':return p.months.at(-1).slice(0,4)+'/12';
  case '據點評核達標現況(1=達標、0=尚未達標)':return String(rnd(site.key+'|qualified',0,1));
  case '據點評核團單主被保人數目標':return numeric(80,350);
@@ -260,7 +260,7 @@ function detailSection(conf,p){
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const head=el('div','np-domain-head'),heading=el('div','np-domain-title');
  heading.append(el('h2','',conf.name+'｜'+data.depth+'.5 據點資訊'),
- el('p','',data.pathLabel+' · '+sites.length+' 筆模擬據點'));
+ el('p','',data.pathLabel+' · '+sites.length+' 筆據點'));
  const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
  back.type='button';back.onclick=()=>{state.detail=null;render()};
  head.append(heading,back);sec.append(head);
@@ -282,33 +282,18 @@ function detailSection(conf,p){
   prev.onclick=()=>{state.page--;render()};next.onclick=()=>{state.page++;render()};
   bar.append(prev,el('span','','第 '+(state.page+1)+' / '+(lastPage+1)+' 頁（共 '+sites.length+' 筆）'),next);sec.append(bar);
  }
- sec.append(el('p','np-footnote','DEMO：據點名稱、代碼、地址、績效和評核狀態皆為模擬數據，不代表真實資料。'));
  return sec;
 }
 function section(conf,p){
  if(state.detail&&state.detail.confName===conf.name)return detailSection(conf,p);
- const members=currentMembers(conf),depth=Math.min(4,state.path.length+1),d=aggregate(members,conf,p);
+ const members=currentMembers(conf),depth=Math.min(4,state.path.length+1);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const head=el('div','np-domain-head'),title=el('div','np-domain-title');
- title.append(el('h2','',conf.name),el('p','',conf.desc+' · DEMO 模擬數據'));
+ title.append(el('h2','',conf.name),el('p','',conf.desc));
  head.append(title,el('span','np-pill','第 '+depth+' 層｜'+['','區域中心','業務區','通訊處','業務員'][depth]));sec.append(head);
- const cols=conf.levels[depth],cards=el('div','np-cards');
- const highlights=cols.filter(x=>!['駐廠職域名稱','職域代碼','經營是否滿2年','個人是否達標','廠區是否達標','年度經營人員標準是否達標'].includes(x)).slice(0,4);
- for(const name of highlights){
-  const card=el('div','np-metric'),number=fmt(name,metric(name,d));
-  card.append(el('span','',name));
-  if(linkable(conf,name,depth)){
-   const button=el('button','np-number-link',number);button.type='button';
-   button.title='查看 '+depth+'.5 層模擬據點明細';
-   button.onclick=()=>openDetail(conf,members,depth,state.path.join(' / ')||'全部組織');
-   card.append(button);
-  }else card.append(el('strong','',number));
-  card.append(el('small','','模擬資料'));cards.append(card);
- }
- sec.append(cards);
+ const cols=conf.levels[depth];
  const h=el('div','np-table-head'),left=el('div');
- left.append(el('strong','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]+'績效明細'),
- el('small','','依參考 Excel 各層級欄位顯示'));
+ left.append(el('strong','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]+'績效明細'));
  h.append(left);sec.append(h);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
  tr.append(el('th','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]));
@@ -346,7 +331,6 @@ function section(conf,p){
   tb.append(row);
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
- sec.append(el('p','np-footnote','此頁全部指標為固定規則生成的 DEMO 模擬資料；各月、年度、昨日及上週均非正式營運實績。'));
  return sec;
 }
 function breadcrumb(){
@@ -371,9 +355,6 @@ function render(){
  $('npMonthBox').hidden=state.mode!=='month';$('npYearBox').hidden=state.mode!=='year';
  $('npMonth').value=state.month;$('npYear').value=state.year;
  $('npDomainSelect').value=state.domain;
- $('npSource').textContent=orgReady?
-  '組織沿用原績效管理（'+sourceInfo.regions+' 區域中心／'+sourceInfo.areas+' 業務區／'+sourceInfo.offices+' 通訊處／'+sourceInfo.agents+' 位業務員）｜績效 DEMO':
-  '組織來源：原績效管理｜績效 DEMO';
  breadcrumb();
  const sections=$('npSections'),msg=$('npNotice');sections.replaceChildren();msg.hidden=true;
  if(!orgReady){
@@ -384,7 +365,7 @@ function render(){
  if(state.mode==='month'&&!/^[0-9]{4}(0[1-9]|1[0-2])$/.test(state.month)){
   $('npRange').textContent='請輸入 YYYYMM';msg.textContent='請輸入有效年月，例如 202611。';msg.hidden=false;return;
  }
- const p=period();$('npRange').textContent=p.label+'｜模擬';
+ const p=period();$('npRange').textContent=p.label;
  const config=C.find(x=>x.name===state.domain)||C[0];
  sections.append(section(config,p));
 }
