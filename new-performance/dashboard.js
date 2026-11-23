@@ -40,11 +40,13 @@ const dp=k=>parts.find(p=>p.type===k).value;
 const today=dp('year')+'-'+dp('month')+'-'+dp('day'),todayMonth=dp('year')+dp('month');
 const state={mode:'month',month:todayMonth,year:dp('year'),domain:'闔家安康',path:[],detail:null,page:0};
 const regions=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
-let orgReady=false,orgIssue=null;
+
+let orgReady=false,orgIssue=null,latestActualMonth=null;
 const sourceInfo={agents:0,regions:0,areas:0,offices:0};
 const allPeople=new Map();
-function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function rnd(seed,min,max){return min+hash(String(seed))%(max-min+1)}
+const worksiteCategories={'闔家安康':['02'],'醫護職域':['01'],'台積電':['05'],'駐廠職域':['04','07']};
+const categoryNames={'01':'醫護公會','02':'闔家安康','04':'駐廠職域','05':'台積電','07':'新安東京'};
+let realSiteRecords=[];
 function pad(n){return String(n).padStart(2,'0')}
 function monthRange(start,end){
  const out=[];let y=Number(start.slice(0,4)),m=Number(start.slice(4));
@@ -53,48 +55,95 @@ function monthRange(start,end){
  }
  return out;
 }
-
+async function loadGzipJson(path){
+ const response=await fetch(path,{cache:'no-cache'});
+ if(!response.ok)throw new Error('業績資料讀取失敗：'+path+'（'+response.status+'）');
+ if(typeof DecompressionStream!=='function')throw new Error('請使用新版 Chrome 或 Edge 讀取業績');
+ const encoded=(await response.text()).trim();
+ const bytes=Uint8Array.from(atob(encoded),x=>x.charCodeAt(0));
+ const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+ return JSON.parse(await new Response(stream).text());
+}
+function confFromRawDomain(domain){
+ if(domain==='醫護公會'||domain==='醫護職域')return '醫護職域';
+ if(domain==='新安東京'||domain==='駐廠'||domain==='駐廠職域')return '駐廠職域';
+ return domain;
+}
 async function loadOrganization(){
  try{
-  const response=await fetch('data/manifest.json',{cache:'no-cache'});
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  const manifest=await response.json();
+  const [mResponse,siteResponse]=await Promise.all([
+   fetch('data/manifest.json',{cache:'no-cache'}),
+   fetch('data/real-sites.json',{cache:'no-cache'})
+  ]);
+  if(!mResponse.ok||!siteResponse.ok)throw new Error('真實資料檔讀取失敗（組織：'+mResponse.status+'；據點：'+siteResponse.status+'）');
+  const manifest=await mResponse.json(),siteData=await siteResponse.json();
   if(manifest.format!=='WorkSiteKGI-demo-real-v1'||!Array.isArray(manifest.agents)||manifest.agents.length<100)
    throw new Error('原績效管理組織索引格式不正確');
+  if(siteData.format!=='worksite-real-sites-v1'||siteData.sites.length!==38970||siteData.active!==62293)
+   throw new Error('真實據點來源資料驗證失敗');
   const seen=new Set(),paths=[];
   for(const raw of manifest.agents){
    if(!Array.isArray(raw)||raw.length!==4||raw.some(v=>typeof v!=='string'||!v.trim()))
     throw new Error('組織索引有不完整的 D/E/F/G 欄位');
    const key=JSON.stringify(raw);
-   if(seen.has(key))continue;seen.add(key);
-   paths.push(raw.slice());
+   if(seen.has(key))continue;seen.add(key);paths.push(raw.slice());
   }
-  const areas=new Set(paths.map(x=>x.slice(0,2).join('|')));
-  const offices=new Set(paths.map(x=>x.slice(0,3).join('|')));
-  const regionCount=new Set(paths.map(x=>x[0])).size;
+  realSiteRecords=siteData.sites;
+  const byPerson=new Map();
+  for(const row of siteData.groups){
+   const key=JSON.stringify(row.slice(0,4));
+   if(!byPerson.has(key))byPerson.set(key,new Map());
+   const byCategory=byPerson.get(key);
+   if(!byCategory.has(row[4]))byCategory.set(row[4],new Set());
+   const ids=byCategory.get(row[4]);
+   for(const id of row[5])ids.add(id);
+  }
   sourceInfo.agents=paths.length;
-  sourceInfo.regions=regionCount;
-  sourceInfo.areas=areas.size;
-  sourceInfo.offices=offices.size;
+  sourceInfo.regions=new Set(paths.map(x=>x[0])).size;
+  sourceInfo.areas=new Set(paths.map(x=>x.slice(0,2).join('|'))).size;
+  sourceInfo.offices=new Set(paths.map(x=>x.slice(0,3).join('|'))).size;
   allPeople.clear();
+  const byConf=new Map();
   for(const conf of C){
+   const index=new Map();
    const members=paths.map(path=>{
-    const seed=conf.name+'|'+JSON.stringify(path);
-    return {path,seed,config:conf.name,siteCount:rnd(seed+'|sites',2,5)};
+    const key=JSON.stringify(path),categories=byPerson.get(key);
+    const ids=new Set();
+    for(const code of worksiteCategories[conf.name]||[])
+     for(const id of categories?.get(code)||[])ids.add(id);
+    const member={path,config:conf.name,siteIds:[...ids],records:[]};
+    index.set(key,member);return member;
    });
-   allPeople.set(conf.name,members);
+   allPeople.set(conf.name,members);byConf.set(conf.name,index);
+  }
+  latestActualMonth=manifest.shards.map(s=>s.month).sort().at(-1);
+  if(state.month>latestActualMonth)state.month=latestActualMonth;
+  const blocks=await Promise.all(manifest.shards.map(async shard=>{
+   const records=await loadGzipJson('data/'+shard.file);
+   if(records.length!==shard.rows)throw new Error('業績資料筆數不符：'+shard.month);
+   return {month:shard.month,records};
+  }));
+  for(const block of blocks){
+   for(const row of block.records){
+    const path=manifest.agents[row[0]],confName=confFromRawDomain(manifest.domains[row[1]]);
+    const member=path&&byConf.get(confName)?.get(JSON.stringify(path));
+    if(member)member.records.push([block.month,Number(row[2])||0,Number(row[3])||0]);
+   }
   }
   orgReady=true;orgIssue=null;render();
  }catch(err){
   orgReady=false;orgIssue=String(err.message||err);render();
  }
 }
-
-function sampleSites(member){
- return Array.from({length:member.siteCount},(_,i)=>{
-  const key=member.seed+'|site|'+i;
-  return {key,member,index:i,code:'WS'+String(hash(key)).padStart(10,'0')};
- });
+function memberSites(members){
+ const map=new Map();
+ for(const member of members){
+  for(const id of member.siteIds){
+   if(!map.has(id))map.set(id,{id,record:realSiteRecords[id],owners:new Set()});
+   map.get(id).owners.add(member.path.join('|'));
+  }
+ }
+ return [...map.values()].sort((a,b)=>a.record[2].localeCompare(b.record[2],'zh-Hant')||a.record[1].localeCompare(b.record[1]));
 }
 function groups(members,depth){
  const map=new Map();
@@ -109,105 +158,46 @@ function groups(members,depth){
 function currentMembers(conf){
  return allPeople.get(conf.name).filter(p=>state.path.every((v,i)=>p.path[i]===v));
 }
+
 function period(){
- const date=new Date(today+'T00:00:00Z');
- const iso=d=>d.toISOString().slice(0,10);
- if(state.mode==='yesterday'){
-  date.setUTCDate(date.getUTCDate()-1);const x=iso(date);return {label:x,months:[x.slice(0,7).replace('-','')],factor:0.044};
- }
- if(state.mode==='lastweek'){
-  const w=(date.getUTCDay()+6)%7;date.setUTCDate(date.getUTCDate()-w-7);
-  const from=iso(date),first=from.slice(0,7).replace('-','');
-  date.setUTCDate(date.getUTCDate()+6);const to=iso(date),last=to.slice(0,7).replace('-','');
-  return {label:from+' ～ '+to,months:monthRange(first,last),factor:0.235};
- }
+ if(state.mode==='yesterday'||state.mode==='lastweek')
+  return {label:state.mode==='yesterday'?'昨天':'上週',months:[],unsupported:true};
  if(state.mode==='year'){
-  const to=state.year===dp('year')?todayMonth:state.year+'12';
-  const months=monthRange(state.year+'01',to);
-  return {label:state.year+'01 ～ '+to,months,factor:1};
+  const end=state.year===dp('year')?latestActualMonth:state.year+'12';
+  return {label:state.year+'01 ～ '+end,months:monthRange(state.year+'01',end)};
  }
- return {label:state.month,months:[state.month],factor:1};
+ return {label:state.month,months:[state.month]};
 }
 function aggregate(members,conf,p){
- const people=members.length,siteCount=members.reduce((v,x)=>v+x.siteCount,0);
- const offices=new Set(members.map(x=>x.path.slice(0,3).join('|'))).size;
- let fyc=0,fyn=0,fyp=0,oldFyc=0,doctorFyc=0,nurseFyc=0,physicianPolicies=0,nursePolicies=0,medicalPolicies=0,
- newCustomers=0,insured=0,groupClients=0,renewed=0,claims=0,appointments=0,unreplied=0,employees=0,joined=0,activePeople=0,qualifiedPeople=0;
+ const people=members.filter(x=>x.siteIds.length||x.records.length).length;
+ const siteCount=memberSites(members).length;
+ const offices=new Set(members.filter(x=>x.siteIds.length||x.records.length).map(x=>x.path.slice(0,3).join('|'))).size;
+ if(p.unsupported)return {sites:siteCount,offices,people,fyc:null,fyn:null,yoy:null,activePeople:null,activity:null};
+ const selected=new Set(p.months),prior=new Set(p.months.map(m=>String(Number(m.slice(0,4))-1)+m.slice(4)));
+ let fyc=0,fyn=0,oldFyc=0,priorHasData=false,activePeople=0;
  for(const person of members){
-  const s=person.seed;
-  const months=p.months;
-  const oneFyc=months.reduce((v,m)=>v+rnd(s+'|fyc|'+m,28000,155000),0)*p.factor;
-  const old=months.reduce((v,m)=>v+rnd(s+'|fyc|'+(Number(m.slice(0,4))-1)+m.slice(4),28000,155000),0)*p.factor;
-  const oneFyn=months.reduce((v,m)=>v+rnd(s+'|fyn|'+m,3,25)/5,0)*p.factor;
-  fyc+=oneFyc;oldFyc+=old;fyn+=oneFyn;
-  fyp+=months.reduce((v,m)=>v+rnd(s+'|fyp|'+m,85000,580000),0)*p.factor;
-  const share=rnd(s+'|medshare',32,72)/100;
-  doctorFyc+=oneFyc*share;nurseFyc+=oneFyc*(1-share);
-  const f=Math.max(0.18,p.factor);
-  physicianPolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|md',1,6)));
-  nursePolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|nurse',1,6)));
-  medicalPolicies+=Math.max(1,Math.round(months.length*f*rnd(s+'|med',1,3)));
-  newCustomers+=Math.max(1,Math.round(oneFyn*rnd(s+'|new',1,5)));
-  insured+=Math.max(1,Math.round(oneFyn*rnd(s+'|insured',9,30)));
-  groupClients+=Math.max(1,Math.round(oneFyn*rnd(s+'|clients',8,24)));
-  renewed+=Math.max(1,Math.round(oneFyn*rnd(s+'|renew',1,6)));
-  claims+=Math.max(1,Math.round(months.length*f*rnd(s+'|claim',1,4)));
-  appointments+=Math.max(1,Math.round(months.length*f*rnd(s+'|appts',3,14)));
-  unreplied+=Math.max(0,Math.round(months.length*f*rnd(s+'|unreplied',0,2)));
-  employees+=rnd(s+'|employee',15,150);
-  joined+=rnd(s+'|oa',5,95);
-  activePeople+=rnd(s+'|active|'+p.label,1,100)>14?1:0;
-  qualifiedPeople+=rnd(s+'|qualified',1,100)>29?1:0;
+  let individualFyn=0;
+  for(const record of person.records){
+   if(selected.has(record[0])){fyc+=record[1];fyn+=record[2];individualFyn+=record[2]}
+   if(prior.has(record[0])){oldFyc+=record[1];priorHasData=true}
+  }
+  if(individualFyn>0)activePeople++;
  }
- const valueAt=(v)=>Math.round(v);
- const rate=(part,total)=>total?part/total*100:0;
- const reviewed=valueAt(siteCount*.82),met=valueAt(reviewed*.72);
- const clientsWithGroup=valueAt(siteCount*.67);
- const gap=Math.max(0,valueAt(siteCount*42000*p.months.length-fyc));
- const diff=Math.max(0,valueAt(siteCount*4*p.months.length-newCustomers));
- const attRate=rnd(conf.name+'|'+p.label+'|attendance|'+members.map(x=>x.seed).join(','),700,970)/10;
- const returned=appointments>0?rate(appointments-unreplied,appointments):100;
- return {
-  sites:siteCount,offices,people,fyc:valueAt(fyc),fyn:Math.round(fyn*10)/10,fyp:valueAt(fyp),
-  doctorFyc:valueAt(doctorFyc),nurseFyc:valueAt(nurseFyc),
-  yoy:oldFyc?rate(fyc-oldFyc,oldFyc):0,activePeople,activity:rate(activePeople,people),
-  qualifiedPeople,qualifiedRate:rate(qualifiedPeople,people),reviewed,met,siteRate:rate(met,reviewed),
-  insured,groupClients,renewed,newCustomers,clientsWithGroup,siteDevelopRate:rate(clientsWithGroup,siteCount),
-  physicianPolicies,nursePolicies,medicalPolicies,unqualified:people-qualifiedPeople,unqualifiedRate:rate(people-qualifiedPeople,people),
-  unqualifiedSites:siteCount-met,gap,diff,claims,employees,joined,appointments,unreplied,replyRate:returned,
-  attendance:attRate,passed:qualifiedPeople>=Math.ceil(people*.6),plantQualified:gap===0&&diff===0,
-  twoYears:rnd(conf.name+'|'+members.map(x=>x.seed).join(','),0,1)===1,
-  worksiteName:'示範駐廠 '+String(hash(conf.name+'|'+members.map(x=>x.seed).join(','))%10000).padStart(4,'0'),
-  worksiteCode:'WS'+String(hash(conf.name+'|'+members.map(x=>x.seed).join(','))).padStart(10,'0')
- };
+ return {sites:siteCount,offices,people,fyc,fyn,
+  yoy:priorHasData&&oldFyc!==0?(fyc-oldFyc)/Math.abs(oldFyc)*100:null,
+  activePeople,activity:people?activePeople/people*100:null};
 }
 function metric(name,d){
  const vals={
- '總據點數':d.sites,'經營據點數':d.sites,'分派廠區數':d.sites,'駐廠職域數':d.sites,
- '經營通訊處數':d.offices,'經營人員數':d.people,'經營人數':d.people,
- 'FYC':d.fyc,'FYN':d.fyn,'FYP':d.fyp,'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,'去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
- '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
- '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
- '應檢視據點數':d.reviewed,'達標據點數':d.met,'據點達標率':d.siteRate,
- '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
- '新加保主被保險人數':d.newCustomers,'新加保團險客戶數':Math.max(1,Math.round(d.newCustomers*.7)),
- '團轉個客戶數':d.renewed,'有團險客戶的據點數':d.clientsWithGroup,'據點開發率':d.siteDevelopRate,
- '預約顧問3天內回覆率':d.replyRate,'三天內回覆率':d.replyRate,'三天內回覆預約率':d.replyRate,
- '經營是否滿2年':d.twoYears?'是':'否','年度經營人員標準是否達標':d.passed?'達標':'未達標',
- '醫師公會FYC':d.doctorFyc,'護理師公會FYC':d.nurseFyc,
- '醫師公會團單數':d.physicianPolicies,'護理師公會團單數':d.nursePolicies,'醫保永逸團單數':d.medicalPolicies,
- '未達標經營人數':d.unqualified,'人員未達標率':d.unqualifiedRate,'據點團單開發率':d.siteDevelopRate,
- '未達標經營據點數':d.unqualifiedSites,'個人是否達標':d.passed?'達標':'未達標',
- 'FYC累月差額':d.gap,'新客戶數':d.newCustomers,'新客戶數累月差額':d.diff,
- '達標廠區數':d.met,'廠區是否達標':d.plantQualified?'達標':'未達標','出席率':d.attendance,
- '理賠件數':d.claims,'員工人數':d.employees,'LINE OA加入人數':d.joined,
- 'LINE OA預約數':d.appointments,'LINE OA 未回覆預約數':d.unreplied,'出勤率':d.attendance,
- '駐廠職域名稱':d.worksiteName,'職域代碼':d.worksiteCode
+  '總據點數':d.sites,'經營據點數':d.sites,'分派廠區數':d.sites,'駐廠職域數':d.sites,
+  '經營通訊處數':d.offices,'經營人員數':d.people,'經營人數':d.people,
+  'FYC':d.fyc,'FYN':d.fyn,'去年同期FYC成長率':d.yoy,
+  '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity
  };
- return Object.prototype.hasOwnProperty.call(vals,name)?vals[name]:0;
+ return Object.prototype.hasOwnProperty.call(vals,name)?vals[name]:null;
 }
 function fmt(name,v){
- if(v===null||v===undefined||v==='')return '0';
+ if(v===null||v===undefined||v==='')return '—';
  if(typeof v==='string')return v;
  if(name.includes('率'))return (name.includes('成長')&&v>0?'+':'')+v.toFixed(1)+'%';
  if(name.includes('FYC')||name==='FYP'||name==='FYN'||name.includes('差額')){
@@ -227,36 +217,26 @@ function openDetail(conf,members,depth,pathLabel){
  render();
  $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
 }
-function siteValue(col,site,p,conf){
- const seed=site.key+'|'+p.label;
- const city=['臺北市','新北市','桃園市','臺中市','臺南市','高雄市'][hash(site.key)%6];
- const road=['中正路','中山路','和平路','復興路','忠孝路'][hash(site.key+'|road')%5];
- const numeric=(lo,hi)=>rnd(seed+'|'+col,lo,hi).toLocaleString('zh-TW');
+
+function siteValue(col,site){
+ const source=site.record;
+ if(!source)return '—';
+ const [type,code,name,grade,zip,workers,otherWorkers]=source;
  switch(col){
- case '據點名稱':return (conf.name==='醫護職域'?'示範醫療據點 ':'示範合作據點 ')+String(hash(site.key)%10000).padStart(4,'0');
- case '據點代碼':case '職域代碼':return site.code;
- case '據點地址':return city+'示範區'+road+rnd(site.key+'|no',1,280)+'號';
- case '據點類型':return ['企業員工','社區服務','合作企業'][hash(site.key+'|type')%3];
- case '適用的據點評核標準':return ['A級','B級','一般'][hash(site.key+'|grade')%3]+'標準';
- case '據點評核時間點':return p.months.at(-1).slice(0,4)+'/12';
- case '據點評核達標現況(1=達標、0=尚未達標)':return String(rnd(site.key+'|qualified',0,1));
- case '據點評核團單主被保人數目標':return numeric(80,350);
- case '今年個險保單數':return numeric(6,45);
- case '據點人數':return numeric(100,1600);
- case '經營人員數':case '經營人數':return numeric(1,9);
- case 'FYC':return numeric(25000,250000);
- case '醫師公會FYC':return numeric(15000,140000);
- case '護理師公會FYC':return numeric(12000,115000);
- case '團險主被保險人數':return numeric(30,550);
- case '團險客戶數(含眷屬)':return numeric(80,800);
- case '新加保主被保險人數':return numeric(3,70);
- case '醫師公會團單數':case '護理師公會團單數':case '醫保永逸團單數':return numeric(1,17);
- default:return numeric(1,200);
+  case '據點名稱':case '駐廠職域名稱':return name||'—';
+  case '據點代碼':case '職域代碼':return code||'—';
+  case '據點類型':return categoryNames[type]||'—';
+  case '職域分級':return grade||'—';
+  case '郵遞區號':return zip||'—';
+  case '職域人數':case '據點人數':return workers===''?'—':Number(workers).toLocaleString('zh-TW');
+  case '其他人員數':return otherWorkers===''?'—':Number(otherWorkers).toLocaleString('zh-TW');
+  case '經營人員數':case '經營人數':return site.owners.size.toLocaleString('zh-TW');
+  default:return '—';  // 原始名冊沒有這項據點指標，不能捏造
  }
 }
 function detailSection(conf,p){
  const data=state.detail;
- const sites=data.members.flatMap(sampleSites);
+ const sites=memberSites(data.members);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const head=el('div','np-domain-head'),heading=el('div','np-domain-title');
  heading.append(el('h2','',conf.name+'｜'+data.depth+'.5 據點資訊'),
@@ -264,7 +244,9 @@ function detailSection(conf,p){
  const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
  back.type='button';back.onclick=()=>{state.detail=null;render()};
  head.append(heading,back);sec.append(head);
- const cols=data.depth===3?conf.sites3:conf.sites4;
+ const cols=[...(data.depth===3?conf.sites3:conf.sites4)];
+ const addressIndex=cols.indexOf('據點地址');
+ if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
  tr.append(el('th','','序號'));cols.forEach(x=>tr.append(el('th','',x)));
  thead.append(tr);table.append(thead);
@@ -272,7 +254,7 @@ function detailSection(conf,p){
  state.page=Math.min(state.page,lastPage);
  sites.slice(state.page*pageSize,(state.page+1)*pageSize).forEach((site,i)=>{
   const row=el('tr');row.append(el('td','',state.page*pageSize+i+1));
-  cols.forEach(c=>row.append(el('td','',siteValue(c,site,p,conf))));tb.append(row);
+  cols.forEach(c=>row.append(el('td','',siteValue(c,site))));tb.append(row);
  });
  table.append(tb);wrap.append(table);sec.append(wrap);
  if(lastPage){
@@ -366,6 +348,8 @@ function render(){
   $('npRange').textContent='請輸入 YYYYMM';msg.textContent='請輸入有效年月，例如 202611。';msg.hidden=false;return;
  }
  const p=period();$('npRange').textContent=p.label;
+ if(p.unsupported){msg.textContent='原始業績只有工作月份，無法準確計算昨天或上週；據點名冊仍顯示真實現況。';msg.hidden=false;}
+ else if(state.mode==='month'&&state.month>latestActualMonth){msg.textContent='目前業績來源截至 '+latestActualMonth+'，所選月份尚無業績資料；據點名冊為現況。';msg.hidden=false;}
  const config=C.find(x=>x.name===state.domain)||C[0];
  sections.append(section(config,p));
 }
