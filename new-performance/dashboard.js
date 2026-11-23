@@ -3,17 +3,17 @@
 const C=[
  {name:'闔家安康',domains:['闔家安康'],color:'#d8903e',desc:'闔家安康據點、團險及個險績效',
  levels:{
-  1:['總據點數','經營通訊處數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','達標據點數','據點達標率','團險主被保險人數','FYP','FYN'],
-  2:['總據點數','經營通訊處數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','達標據點數','據點達標率','團險主被保險人數','FYP','FYN'],
-  3:['總據點數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','達標據點數','據點達標率','團險主被保險人數','FYP','FYN','預約顧問3天內回覆率','有團險客戶的據點數','據點開發率','新加保主被保險人數','新加保團險客戶數','團險客戶數(含眷屬)','團轉個客戶數'],
+  1:['總據點數','經營通訊處數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','未達標據點數','據點達標率','團險主被保險人數','FYP','FYN'],
+  2:['總據點數','經營通訊處數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','未達標據點數','據點達標率','團險主被保險人數','FYP','FYN'],
+  3:['總據點數','經營人員數','FYC','FYC累月成長率','個險實動人數','個險實動率','經營人員達標率','經營人員達考核標準人數','應檢視據點數','未達標據點數','據點達標率','團險主被保險人數','FYP','FYN','預約顧問3天內回覆率','有團險客戶的據點數','據點開發率','新加保主被保險人數','新加保團險客戶數','團險客戶數(含眷屬)','團轉個客戶數'],
   4:['總據點數','經營是否滿2年','年度經營人員標準是否達標','FYC','團險主被保險人數','預約顧問3天內回覆率','新加保主被保險人數','新加保團險客戶數','團險客戶數(含眷屬)','有團險客戶的據點數','據點開發率','FYP','FYN']},
  sites3:['據點名稱','職域代碼','經營人員數','FYC','團險主被保險人數','團險客戶數(含眷屬)','新加保主被保險人數','今年個險保單數','據點類型','適用的據點評核標準','據點評核時間點','據點評核團單主被保人數目標','據點評核達標現況(1=達標、0=尚未達標)','據點地址'],
  sites4:['據點名稱','職域代碼','經營人員數','FYC','團險主被保險人數','團險客戶數(含眷屬)','新加保主被保險人數','今年個險保單數','據點評核達標現況(1=達標、0=尚未達標)','據點地址']},
  {name:'醫護職域',domains:['醫護公會','醫護職域'],color:'#13a092',desc:'醫師與護理師公會、醫保永逸團單',
  levels:{
-  1:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','醫護職域FYC累月成長率','去年同期FYC成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','經營人員實動率','據點團單開發率'],
-  2:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','醫護職域FYC累月成長率','去年同期FYC成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','經營人員實動率','據點團單開發率'],
-  3:['總據點數','經營人數','醫師公會FYC','護理師公會FYC','醫護職域FYC累月成長率','去年同期FYC成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','未達標經營人數','人員未達標率','經營據點數','未達標經營據點數'],
+  1:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','據點團單開發率'],
+  2:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','據點團單開發率'],
+  3:['總據點數','經營人數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','未達標經營人數','人員達標率','經營據點數','未達標經營據點數'],
   4:['總據點數','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','三天內回覆率','個人是否達標']},
  sites3:['據點名稱','據點代碼','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','經營人數','據點地址','據點人數'],
  sites4:['據點名稱','據點代碼','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','據點地址','據點人數']},
@@ -25,10 +25,10 @@ const C=[
   4:['FYC','新客戶數','三天內回覆率','廠區是否達標','出席率']}},
  {name:'駐廠職域',domains:['駐廠職域','駐廠','新安東京'],color:'#5180c6',desc:'駐廠服務、保費與理賠（含新安東京）',
  levels:{
-  1:['駐廠職域數','經營人員數','FYC','FYC成長率','FYN','FYP','理賠件數'],
-  2:['駐廠職域數','經營人員數','FYC','FYC成長率','FYN','FYP','理賠件數'],
-  3:['駐廠職域數','經營人員數','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','出勤率'],
-  4:['駐廠職域名稱','職域代碼','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
+  1:['駐廠職域數','經營人員數','FYC','FYC累月成長率','FYN','FYP','理賠件數'],
+  2:['駐廠職域數','經營人員數','FYC','FYC累月成長率','FYN','FYP','理賠件數'],
+  3:['駐廠職域數','經營人員數','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','出勤率'],
+  4:['駐廠職域名稱','職域代碼','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
 ];
 
 const root=document.getElementById('newPerformance');
@@ -38,7 +38,7 @@ const $=id=>document.getElementById(id);
 const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
 const dp=k=>parts.find(p=>p.type===k).value;
 const today=dp('year')+'-'+dp('month')+'-'+dp('day'),todayMonth=dp('year')+dp('month');
-const state={mode:'month',month:todayMonth,year:dp('year'),domain:'闔家安康',path:[],detail:null,page:0};
+const state={mode:'month',month:todayMonth,year:dp('year'),domain:'闔家安康',path:[],detail:null,page:0,sort:{col:null,dir:1},filters:{}};
 const regions=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
 
 let orgReady=false,orgIssue=null,latestActualMonth=null;
@@ -176,7 +176,7 @@ function period(){
  return {label:state.month,months:[state.month]};
 }
 function aggregate(members,conf,p){
- const activeMembers=members.filter(x=>x.siteIds.length||x.records.length);
+ const activeMembers=members.filter(x=>x.siteIds.length>0);
  const people=activeMembers.length, sites=memberSites(members), siteCount=sites.length;
  const offices=new Set(activeMembers.map(x=>x.path.slice(0,3).join('|'))).size;
  const selected=new Set(p.months),prior=new Set(p.months.map(m=>String(Number(m.slice(0,4))-1)+m.slice(4)));
@@ -235,8 +235,8 @@ function aggregate(members,conf,p){
     ?Number(workers):estimate(key+'|employees',15,150);
   joined+=estimate(key+'|oa',5,95);
  }
- const gap=Math.max(0,Math.round(siteCount*42000*periodFactor-fyc));
- const diff=Math.max(0,Math.round(siteCount*4*periodFactor-newCustomers));
+ const gap=Math.round(fyc-siteCount*42000*periodFactor);
+ const diff=Math.round(newCustomers-siteCount*4*periodFactor);
  const attendance=estimate(periodKey+'|'+members.map(x=>x.path.join('|')).sort().join(',')+'|attendance',700,970)/10;
  const first=sites[0]?.record;
  const yoy=(p.unsupported||priorHasData)&&oldFyc!==0
@@ -252,7 +252,7 @@ function aggregate(members,conf,p){
   unqualifiedRate:rate(people-qualifiedPeople,people),unqualifiedSites:siteCount-met,
   gap,diff,claims,employees,joined,appointments,unreplied,replyRate:appointments?rate(appointments-unreplied,appointments):100,
   attendance,passed:people>0&&qualifiedPeople>=Math.ceil(people*.6),
-  plantQualified:siteCount>0&&gap===0&&diff===0,
+  plantQualified:siteCount>0&&gap>=0&&diff>=0,
   twoYears:estimate(periodKey+'|'+members.map(x=>x.path.join('|')).sort().join(',')+'|two-years',0,1)===1,
   worksiteName:first?.[2]||'未分派',worksiteCode:first?.[1]||'未分派'
  };
@@ -263,10 +263,10 @@ function metric(name,d){
   '經營通訊處數':d.offices,'經營人員數':d.people,'經營人數':d.people,
   'FYC':d.fyc,'FYN':d.fyn,'FYP':d.fyp,
   'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,
-  '去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
+  'FYC同期成長率':d.yoy,'去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
   '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
   '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
-  '應檢視據點數':d.reviewed,'達標據點數':d.met,'據點達標率':d.siteRate,
+  '應檢視據點數':d.reviewed,'達標據點數':d.met,'未達標據點數':Math.max(0,d.reviewed-d.met),'據點達標率':d.siteRate,
   '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
   '新加保主被保險人數':d.newCustomers,'新加保團險客戶數':Math.round(d.newCustomers*.7),
   '團轉個客戶數':d.renewed,'有團險客戶的據點數':d.clientsWithGroup,
@@ -277,10 +277,10 @@ function metric(name,d){
   '醫師公會FYC':d.doctorFyc,'護理師公會FYC':d.nurseFyc,
   '醫師公會團單數':d.physicianPolicies,'護理師公會團單數':d.nursePolicies,
   '醫保永逸團單數':d.medicalPolicies,
-  '未達標經營人數':d.unqualified,'人員未達標率':d.unqualifiedRate,
+  '未達標經營人數':d.unqualified,'人員達標率':d.qualifiedRate,
   '據點團單開發率':d.siteDevelopRate,'未達標經營據點數':d.unqualifiedSites,
   '個人是否達標':d.passed?'達標':'未達標',
-  'FYC累月差額':d.gap,'新客戶數':d.newCustomers,'新客戶數累月差額':d.diff,
+  'FYC累月差額':d.gap,'FYC當月差額':d.gap,'FYC上週差額':d.gap,'FYC昨日差額':d.gap,'新客戶數':d.newCustomers,'新客戶數累月差額':d.diff,'新客戶數當月差額':d.diff,'新客戶數上週差額':d.diff,'新客戶數昨日差額':d.diff,
   '達標廠區數':d.met,'廠區是否達標':d.plantQualified?'達標':'未達標',
   '出席率':d.attendance,'理賠件數':d.claims,'員工人數':d.employees,'LINE OA加入人數':d.joined,
   'LINE OA預約數':d.appointments,'LINE OA 未回覆預約數':d.unreplied,
@@ -298,15 +298,79 @@ function fmt(name,v){
  }
  return v.toLocaleString('zh-TW',{maximumFractionDigits:1});
 }
+
+function visibleColumns(conf,depth){
+ return conf.levels[depth].filter(col=>state.mode==='year'||!col.includes('成長率')).map(col=>{
+  if(conf.name!=='台積電'||state.mode==='year')return col;
+  const period=state.mode==='month'?'當月':state.mode==='lastweek'?'上週':'昨日';
+  return col==='FYC累月差額'?'FYC'+period+'差額':
+   col==='新客戶數累月差額'?'新客戶數'+period+'差額':col;
+ });
+}
+function resetTable(){state.sort={col:null,dir:1};state.filters={};state.page=0}
+function normalizedValue(value){
+ if(typeof value==='number')return value;
+ const raw=String(value??'').replace(/,/g,'').trim();
+ return /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)%?$/.test(raw)?Number(raw.replace('%','')):String(value??'');
+}
+function passesFilter(value,query){
+ const q=String(query||'').trim();if(!q)return true;
+ const v=normalizedValue(value);
+ const m=q.replace(/,/g,'').match(/^(>=|<=|!=|>|<|=)?\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%?$/);
+ if(m&&typeof v==='number'){
+  const n=Number(m[2]),op=m[1]||'=';
+  if(op==='>')return v>n;if(op==='>=')return v>=n;
+  if(op==='<')return v<n;if(op==='<=')return v<=n;
+  if(op==='!=')return v!==n;return v===n;
+ }
+ return String(value??'').toLocaleLowerCase('zh-TW').includes(q.toLocaleLowerCase('zh-TW'));
+}
+function orderedRows(entries,valueOf){
+ const out=entries.filter(entry=>Object.entries(state.filters).every(([col,q])=>passesFilter(valueOf(entry,col),q)));
+ if(state.sort.col)out.sort((a,b)=>{
+  const va=normalizedValue(valueOf(a,state.sort.col)),vb=normalizedValue(valueOf(b,state.sort.col));
+  const n=typeof va==='number'&&typeof vb==='number'?va-vb:String(va).localeCompare(String(vb),'zh-Hant',{numeric:true});
+  return n*state.sort.dir||(a.ordinal??0)-(b.ordinal??0);
+ });
+ return out;
+}
+function headerCell(tr,col){
+ const th=el('th','np-th'),box=el('div','np-col-head');
+ const button=el('button','np-sort-btn',col+(state.sort.col===col?(state.sort.dir===1?' ▲':' ▼'):' ↕'));
+ button.type='button';button.title='排序：'+col+'（點擊切換升降冪）';
+ button.setAttribute('aria-label','排序 '+col);
+ button.onclick=()=>{state.sort=state.sort.col===col?{col,dir:-state.sort.dir}:{col,dir:1};state.page=0;render()};
+ const input=el('input','np-col-filter');input.type='text';input.placeholder='篩選';input.value=state.filters[col]||'';
+ input.title='文字包含；數值可用 >100、<=50、=0、!=0';
+ input.setAttribute('aria-label','篩選 '+col);
+ input.onchange=()=>{if(input.value.trim())state.filters[col]=input.value.trim();else delete state.filters[col];state.page=0;render()};
+ input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}};
+ box.append(button,input);th.append(box);tr.append(th);
+}
 function linkable(conf,name,depth){
- if(depth<3||depth>4)return false;
- if(conf.name==='闔家安康')return name==='總據點數';
- if(conf.name==='醫護職域')return name==='總據點數';
- return false;
+ return depth>=1&&depth<=4&&({
+  '闔家安康':['總據點數'],
+  '醫護職域':['總據點數','經營據點數'],
+  '台積電':['分派廠區數'],
+  '駐廠職域':['駐廠職域數']
+ }[conf.name]||[]).includes(name);
+}
+function isDanger(name,value){
+ return (typeof value==='number'&&(value<0||(/未達標/.test(name)&&value>0)))||
+   (typeof value==='string'&&/未達標|尚未達標/.test(value));
+}
+function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
+ const cell=el('td'),value=metric(col,stats),display=fmt(col,value);
+ if(isDanger(col,value))cell.classList.add('np-cell-danger');
+ if(linkable(conf,col,depth)){
+  const btn=el('button','np-number-link',display);btn.type='button';
+  btn.title='查看第 '+depth+' 層職域統計';
+  btn.onclick=()=>openDetail(conf,members,depth,pathLabel);cell.append(btn);
+ }else cell.textContent=display;
+ row.append(cell);
 }
 function openDetail(conf,members,depth,pathLabel){
- state.detail={confName:conf.name,members,depth,pathLabel};state.page=0;
- render();
+ resetTable();state.detail={confName:conf.name,members,depth,pathLabel};render();
  $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
 }
 
