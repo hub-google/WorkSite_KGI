@@ -520,9 +520,9 @@ function section(conf,p){
  if(state.detail&&state.detail.confName===conf.name)return detailSection(conf,p);
  const members=currentMembers(conf).filter(x=>x.siteIds.length>0),depth=Math.min(4,state.path.length+1);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
- const head=el('div','np-domain-head'),title=el('div','np-domain-title');
- title.append(el('h2','',conf.name),el('p','',conf.desc));
- head.append(title,el('span','np-pill','第 '+depth+' 層｜'+['','區域中心','業務區','通訊處','業務員'][depth]));sec.append(head);
+ // The domain selector and breadcrumbs already convey this context.
+ // Do not repeat the domain description / level banner above the table.
+ sec.setAttribute('aria-label',conf.name+'績效表');
  const cols=visibleColumns(conf,depth);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
  headerCell(tr,'組織');cols.forEach(col=>headerCell(tr,col));
