@@ -409,93 +409,107 @@ function siteValue(col,site,p){
   default:return numeric(1,200);
  }
 }
+
 function detailSection(conf,p){
- const data=state.detail;
- const sites=memberSites(data.members);
+ const data=state.detail,allSites=memberSites(data.members);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const head=el('div','np-domain-head'),heading=el('div','np-domain-title');
- heading.append(el('h2','',conf.name+'｜'+data.depth+'.5 據點資訊'),
- el('p','',data.pathLabel+' · '+sites.length+' 筆據點'));
- const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
- back.type='button';back.onclick=()=>{state.detail=null;render()};
- head.append(heading,back);sec.append(head);
- const cols=[...(data.depth===3?conf.sites3:conf.sites4)];
+ const fallback=conf.name==='台積電'
+  ?['據點名稱','職域代碼','經營人員數','FYC','今年個險保單數','據點地址']
+  :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
+ const cols=[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
+ const allRows=allSites.map((site,i)=>({site,ordinal:i+1}));
+ const rows=orderedRows(allRows,(entry,col)=>col==='序號'?entry.ordinal:siteValue(col,entry.site,p));
+ heading.append(el('h2','',conf.name+'｜第 '+data.depth+' 層職域統計'),
+  el('p','',data.pathLabel+' · '+rows.length+(rows.length!==allSites.length?' / '+allSites.length:'')+' 筆據點'));
+ const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
+ back.type='button';back.onclick=()=>{state.detail=null;resetTable();render()};
+ head.append(heading,back);sec.append(head);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- tr.append(el('th','','序號'));cols.forEach(x=>tr.append(el('th','',x)));
+ headerCell(tr,'序號');cols.forEach(x=>headerCell(tr,x));
  thead.append(tr);table.append(thead);
- const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(sites.length/pageSize)-1);
+ const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(rows.length/pageSize)-1);
  state.page=Math.min(state.page,lastPage);
- sites.slice(state.page*pageSize,(state.page+1)*pageSize).forEach((site,i)=>{
-  const row=el('tr');row.append(el('td','',state.page*pageSize+i+1));
-  cols.forEach(c=>row.append(el('td','',siteValue(c,site,p))));tb.append(row);
+ rows.slice(state.page*pageSize,(state.page+1)*pageSize).forEach(entry=>{
+  const row=el('tr');row.append(el('td','',entry.ordinal));
+  cols.forEach(c=>{
+   const value=siteValue(c,entry.site,p),cell=el('td','',value);
+   if(isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
+   row.append(cell);
+  });
+  tb.append(row);
  });
+ if(!rows.length){
+  const empty=el('tr'),cell=el('td','np-empty','沒有符合條件的職域');
+  cell.colSpan=cols.length+1;empty.append(cell);tb.append(empty);
+ }
  table.append(tb);wrap.append(table);sec.append(wrap);
  if(lastPage){
   const bar=el('div','np-pager');
   const prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');
   prev.type='button';next.type='button';prev.disabled=state.page===0;next.disabled=state.page===lastPage;
   prev.onclick=()=>{state.page--;render()};next.onclick=()=>{state.page++;render()};
-  bar.append(prev,el('span','','第 '+(state.page+1)+' / '+(lastPage+1)+' 頁（共 '+sites.length+' 筆）'),next);sec.append(bar);
+  bar.append(prev,el('span','','第 '+(state.page+1)+' / '+(lastPage+1)+' 頁（共 '+rows.length+' 筆）'),next);sec.append(bar);
  }
  return sec;
 }
 function section(conf,p){
  if(state.detail&&state.detail.confName===conf.name)return detailSection(conf,p);
- const members=currentMembers(conf),depth=Math.min(4,state.path.length+1);
+ const members=currentMembers(conf).filter(x=>x.siteIds.length>0),depth=Math.min(4,state.path.length+1);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const head=el('div','np-domain-head'),title=el('div','np-domain-title');
  title.append(el('h2','',conf.name),el('p','',conf.desc));
  head.append(title,el('span','np-pill','第 '+depth+' 層｜'+['','區域中心','業務區','通訊處','業務員'][depth]));sec.append(head);
- const cols=conf.levels[depth];
+ const cols=visibleColumns(conf,depth);
  const h=el('div','np-table-head'),left=el('div');
  left.append(el('strong','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]+'績效明細'));
  h.append(left);sec.append(h);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- tr.append(el('th','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]));
- cols.forEach(col=>tr.append(el('th','',col)));
+ headerCell(tr,'組織');cols.forEach(col=>headerCell(tr,col));
  thead.append(tr);table.append(thead);
  const tb=el('tbody');
- const parts=groups(members,state.path.length);
- for(const [label,group] of parts){
-  const row=el('tr'),name=el('td','np-level-name');
+ const entries=groups(members,state.path.length).map(([label,group],ordinal)=>({
+  label,group,stats:aggregate(group,conf,p),ordinal
+ })).filter(entry=>entry.stats.sites>0);
+ const visible=orderedRows(entries,(entry,col)=>col==='組織'?entry.label:metric(col,entry.stats));
+ for(const entry of visible){
+  const {label,group,stats}=entry,row=el('tr'),name=el('td','np-level-name');
   if(state.path.length<3){
    const btn=el('button','np-link',label+'　›');btn.type='button';
    btn.title='查看下一層績效';
-   btn.onclick=()=>{state.path.push(label);state.detail=null;render();window.scrollTo(0,0)};
+   btn.onclick=()=>{state.path.push(label);state.detail=null;resetTable();render();window.scrollTo(0,0)};
    name.append(btn);
   }else name.textContent=label;
   row.append(name);
-  const stats=aggregate(group,conf,p);
-  for(const col of cols){
-   const cell=el('td'),number=fmt(col,metric(col,stats));
-   if(linkable(conf,col,depth)){
-    const btn=el('button','np-number-link',number);btn.type='button';
-    btn.title='點擊進入 '+depth+'.5 層據點明細';
-    btn.onclick=()=>openDetail(conf,group,depth,[...state.path,label].join(' / '));
-    cell.append(btn);
-   }else cell.textContent=number;
-   row.append(cell);
-  }
+  for(const col of cols)appendMetricCell(row,conf,col,stats,group,depth,[...state.path,label].join(' / '));
   tb.append(row);
  }
- if(state.path.length===0){
-  const total=aggregate(members,conf,p);
-  const row=el('tr','np-grand-total');
-  row.append(el('td','np-level-name','通路總計'));
-  for(const col of cols)row.append(el('td','',fmt(col,metric(col,total))));
-  tb.append(row);
+ if(!visible.length){
+  const row=el('tr'),cell=el('td','np-empty','沒有符合條件且據點數大於 0 的資料');
+  cell.colSpan=cols.length+1;row.append(cell);tb.append(row);
+ }
+ if(state.path.length===0&&visible.length){
+  const eligible=visible.flatMap(entry=>entry.group);
+  const total=aggregate(eligible,conf,p);
+  if(total.sites>0){
+   const row=el('tr','np-grand-total');
+   row.append(el('td','np-level-name','通路總計'));
+   for(const col of cols)appendMetricCell(row,conf,col,total,eligible,depth,'通路總計');
+   tb.append(row);
+  }
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
  return sec;
 }
+
 function breadcrumb(){
  const nav=$('npBreadcrumb');nav.replaceChildren();
  const add=(label,i)=>{
   const btn=el('button','np-crumb',label);btn.type='button';
   btn.disabled=state.path.length===i&&!state.detail;
-  btn.onclick=()=>{state.path=state.path.slice(0,i);state.detail=null;render()};
+  btn.onclick=()=>{state.path=state.path.slice(0,i);state.detail=null;resetTable();render()};
   nav.append(btn);
  };
  add('通路總計',0);
@@ -534,16 +548,16 @@ function init(){
  select.value=state.domain;
  select.onchange=e=>{
   state.domain=e.target.value;
-  state.path=[];state.detail=null;state.page=0;
+  state.path=[];state.detail=null;resetTable();
   render();
  };
  document.querySelectorAll('[data-np-mode]').forEach(btn=>btn.onclick=()=>{
-  state.mode=btn.dataset.npMode;state.path=[];state.detail=null;state.page=0;render();
+  state.mode=btn.dataset.npMode;state.path=[];state.detail=null;resetTable();render();
  });
  $('npMonth').oninput=e=>{state.month=e.target.value.replace(/\D/g,'').slice(0,6);
-  if(state.month.length===6){state.detail=null;render()}};
+  if(state.month.length===6){state.detail=null;resetTable();render()}};
  $('npMonth').onchange=render;
- $('npYear').onchange=e=>{state.year=e.target.value;state.detail=null;state.path=[];render()};
+ $('npYear').onchange=e=>{state.year=e.target.value;state.detail=null;state.path=[];resetTable();render()};
  render();
  loadOrganization();
 }
