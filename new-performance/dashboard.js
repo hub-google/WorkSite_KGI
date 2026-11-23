@@ -300,10 +300,10 @@ function section(conf,p){
  cols.forEach(col=>tr.append(el('th','',col)));
  thead.append(tr);table.append(thead);
  const tb=el('tbody');
- const parts=state.path.length===4?[[state.path[3],members]]:groups(members,state.path.length);
+ const parts=groups(members,state.path.length);
  for(const [label,group] of parts){
   const row=el('tr'),name=el('td','np-level-name');
-  if(state.path.length<4){
+  if(state.path.length<3){
    const btn=el('button','np-link',label+'　›');btn.type='button';
    btn.title='查看下一層績效';
    btn.onclick=()=>{state.path.push(label);state.detail=null;render();window.scrollTo(0,0)};
