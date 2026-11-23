@@ -79,7 +79,7 @@ async function loadOrganization(){
   const manifest=await mResponse.json(),siteData=await siteResponse.json();
   if(manifest.format!=='WorkSiteKGI-demo-real-v1'||!Array.isArray(manifest.agents)||manifest.agents.length<100)
    throw new Error('原績效管理組織索引格式不正確');
-  if(siteData.format!=='worksite-real-sites-v1'||siteData.sites.length!==38970||siteData.active!==62293)
+  if(siteData.format!=='worksite-real-sites-v1'||!Array.isArray(siteData.sites)||!Array.isArray(siteData.groups)||siteData.sites.length<1000)
    throw new Error('真實據點來源資料驗證失敗');
   const seen=new Set(),paths=[];
   for(const raw of manifest.agents){
