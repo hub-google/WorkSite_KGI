@@ -334,19 +334,81 @@ function orderedRows(entries,valueOf){
  });
  return out;
 }
+
+let activeFilterPopover=null,activeFilterTrigger=null;
+function closeFilterPopover(){
+ if(activeFilterPopover){activeFilterPopover.remove();activeFilterPopover=null}
+ if(activeFilterTrigger){activeFilterTrigger.setAttribute('aria-expanded','false');activeFilterTrigger=null}
+}
+function filterIcon(){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('viewBox','0 0 24 24');
+ svg.setAttribute('width','16');svg.setAttribute('height','16');
+ svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');
+ svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');
+ svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
+ const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+ path.setAttribute('d','M4 4h16l-6.5 8v6l-3 2v-8L4 4Z');
+ svg.append(path);return svg;
+}
+function openFilterPopover(trigger,col){
+ if(activeFilterTrigger===trigger){closeFilterPopover();return}
+ closeFilterPopover();
+ const panel=el('div','np-filter-popover');panel.setAttribute('role','dialog');
+ panel.setAttribute('aria-label','篩選 '+col);
+ const title=el('div','np-filter-title','篩選｜'+col);
+ const input=el('input','np-filter-value');input.type='text';
+ input.value=state.filters[col]||'';input.placeholder='輸入篩選條件';
+ input.setAttribute('aria-label','篩選條件');
+ const hint=el('div','np-filter-hint','文字包含；數值可輸入 >100、<=50、=0、!=0');
+ const actions=el('div','np-filter-actions');
+ const clear=el('button','np-filter-clear','清除'),cancel=el('button','np-filter-cancel','取消'),apply=el('button','np-filter-apply','套用');
+ for(const button of [clear,cancel,apply])button.type='button';
+ const save=()=>{
+  const value=input.value.trim();
+  if(value)state.filters[col]=value;
+  else delete state.filters[col];
+  state.page=0;closeFilterPopover();render();
+ };
+ clear.onclick=()=>{input.value='';save()};
+ cancel.onclick=closeFilterPopover;
+ apply.onclick=save;
+ input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();save()}else if(e.key==='Escape'){e.preventDefault();closeFilterPopover();trigger.focus()}};
+ actions.append(clear,cancel,apply);panel.append(title,input,hint,actions);
+ document.body.append(panel);
+ activeFilterPopover=panel;activeFilterTrigger=trigger;
+ trigger.setAttribute('aria-expanded','true');
+ const rect=trigger.getBoundingClientRect();
+ const viewportWidth=document.documentElement.clientWidth;
+ const panelWidth=Math.min(290,viewportWidth-24);
+ panel.style.width=panelWidth+'px';
+ panel.style.left=Math.max(12,Math.min(viewportWidth-panelWidth-12,rect.right-panelWidth))+'px';
+ const below=rect.bottom+8;
+ const roomBelow=window.innerHeight-below;
+ panel.style.top=(roomBelow<190&&rect.top>roomBelow?Math.max(12,rect.top-196):below)+'px';
+ input.focus();input.select();
+}
+document.addEventListener('pointerdown',e=>{
+ if(activeFilterPopover&&!activeFilterPopover.contains(e.target)&&!activeFilterTrigger?.contains(e.target))closeFilterPopover();
+},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFilterPopover()});
+window.addEventListener('resize',closeFilterPopover);
+document.addEventListener('scroll',e=>{if(activeFilterPopover&&!activeFilterPopover.contains(e.target))closeFilterPopover()},true);
 function headerCell(tr,col){
  const th=el('th','np-th'),box=el('div','np-col-head');
- const button=el('button','np-sort-btn',col+(state.sort.col===col?(state.sort.dir===1?' ▲':' ▼'):' ↕'));
- button.type='button';button.title='排序：'+col+'（點擊切換升降冪）';
- button.setAttribute('aria-label','排序 '+col);
- button.onclick=()=>{state.sort=state.sort.col===col?{col,dir:-state.sort.dir}:{col,dir:1};state.page=0;render()};
- const input=el('input','np-col-filter');input.type='text';input.placeholder='篩選';input.value=state.filters[col]||'';
- input.title='文字包含；數值可用 >100、<=50、=0、!=0';
- input.setAttribute('aria-label','篩選 '+col);
- input.onchange=()=>{if(input.value.trim())state.filters[col]=input.value.trim();else delete state.filters[col];state.page=0;render()};
- input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}};
- box.append(button,input);th.append(box);tr.append(th);
+ const label=el('span','np-col-label',col);
+ const sort=el('button','np-sort-btn',(state.sort.col===col?(state.sort.dir===1?'↑':'↓'):'↕'));
+ sort.type='button';sort.title='排序：'+col+'（點擊切換升降冪）';
+ sort.setAttribute('aria-label','排序 '+col);
+ sort.onclick=()=>{state.sort=state.sort.col===col?{col,dir:-state.sort.dir}:{col,dir:1};state.page=0;render()};
+ const filter=el('button','np-filter-btn'+(state.filters[col]?' is-active':''));filter.type='button';
+ filter.append(filterIcon());filter.title='篩選 '+col+(state.filters[col]?'（已套用）':'');
+ filter.setAttribute('aria-label','篩選 '+col);
+ filter.setAttribute('aria-haspopup','dialog');filter.setAttribute('aria-expanded','false');
+ filter.onclick=()=>openFilterPopover(filter,col);
+ box.append(label,sort,filter);th.append(box);tr.append(th);
 }
+
 function linkable(conf,name,depth){
  return depth>=1&&depth<=4&&({
   '闔家安康':['總據點數'],
@@ -518,6 +580,7 @@ function breadcrumb(){
 }
 
 function render(){
+ closeFilterPopover();
  if(!root)return;
  document.querySelectorAll('[data-np-mode]').forEach(btn=>{
   const active=btn.dataset.npMode===state.mode;btn.classList.toggle('active',active);
