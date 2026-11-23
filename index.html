@@ -313,21 +313,34 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 @media(max-width:900px){#newPerformance .np-toolbar{flex-wrap:wrap}#newPerformance .np-domain-picker{flex:1 1 180px}}
 @media(max-width:650px){#newPerformance .np-toolbar{padding:12px;gap:10px}#newPerformance .np-domain-picker{width:100%;min-width:100%}#newPerformance .np-domain{padding:11px}#newPerformance .np-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}#newPerformance .np-tab{padding:8px 11px}#newPerformance .np-table td,#newPerformance .np-table th{padding:9px 10px}}
 
-/* New performance: each metric has a sortable header and compact column filter. */
-#newPerformance .np-th{min-width:126px;vertical-align:bottom}
-#newPerformance .np-th:first-child{min-width:170px}
-#newPerformance .np-col-head{display:flex;flex-direction:column;align-items:stretch;gap:7px}
-#newPerformance .np-sort-btn{display:block;border:0;background:transparent;text-align:right;color:inherit;font:inherit;font-weight:800;white-space:nowrap;padding:2px 0;cursor:pointer}
-#newPerformance .np-th:first-child .np-sort-btn{text-align:left}
-#newPerformance .np-sort-btn:hover{color:#116ba3;text-decoration:underline;text-underline-offset:3px}
-#newPerformance .np-sort-btn:focus-visible,#newPerformance .np-col-filter:focus-visible{outline:2px solid #2780b4;outline-offset:2px}
-#newPerformance .np-col-filter{box-sizing:border-box;min-width:98px;width:100%;height:29px;background:white;border:1px solid #ccdce8;border-radius:6px;color:#2c4e69;font-size:12px;font-weight:500;padding:4px 7px}
-#newPerformance .np-col-filter::placeholder{color:#8398a9}
+/* New performance: compact single-line headers; filter is a funnel popover. */
+#newPerformance .np-th{min-width:112px;vertical-align:middle}
+#newPerformance .np-th:first-child{min-width:146px}
+#newPerformance .np-col-head{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap}
+#newPerformance .np-th:first-child .np-col-head{justify-content:flex-start}
+#newPerformance .np-col-label{font-weight:750}
+#newPerformance .np-sort-btn,
+#newPerformance .np-filter-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:22px;height:24px;border:0;border-radius:5px;background:transparent;color:#53718a;font-size:17px;line-height:1;font-weight:800;padding:0;cursor:pointer}
+#newPerformance .np-sort-btn:hover,
+#newPerformance .np-filter-btn:hover{background:#d8e8f2;color:#115e91}
+#newPerformance .np-filter-btn.is-active{color:#0b6099;background:#c9e6f8}
+#newPerformance .np-sort-btn:focus-visible,
+#newPerformance .np-filter-btn:focus-visible{outline:2px solid #2780b4;outline-offset:1px}
+.np-filter-popover{position:fixed;z-index:10050;box-sizing:border-box;padding:16px;background:#fff;color:#294964;border:1px solid #cddfeb;border-radius:12px;box-shadow:0 12px 32px #1c385042;font:13px system-ui,"Noto Sans TC",sans-serif}
+.np-filter-title{font-size:14px;font-weight:800;margin-bottom:11px}
+.np-filter-value{box-sizing:border-box;width:100%;height:39px;padding:8px 11px;border:1px solid #bed1df;border-radius:8px;background:white;color:#1e405b;font:inherit}
+.np-filter-value:focus{outline:2px solid #438fbd;outline-offset:1px}
+.np-filter-hint{margin:9px 0 13px;color:#70859a;font-size:11.5px;line-height:1.6;white-space:normal}
+.np-filter-actions{display:flex;gap:8px;justify-content:flex-end}
+.np-filter-actions button{border:1px solid #cdddeb;background:#f6f9fc;border-radius:7px;padding:8px 12px;color:#365e7e;font-size:12px;font-weight:700;cursor:pointer}
+.np-filter-actions .np-filter-clear{margin-right:auto}
+.np-filter-actions .np-filter-apply{color:#fff;background:#276e9d;border-color:#276e9d}
+.np-filter-actions button:hover{filter:brightness(.96)}
 #newPerformance .np-table .np-cell-danger,
 #newPerformance .np-table .np-cell-danger .np-number-link{color:#bf1f28!important;font-weight:850}
 #newPerformance .np-table .np-grand-total .np-cell-danger,
 #newPerformance .np-table .np-grand-total .np-cell-danger .np-number-link{color:#bf1f28!important}
-@media(max-width:650px){#newPerformance .np-th{min-width:115px}#newPerformance .np-th:first-child{min-width:150px}#newPerformance .np-col-filter{min-width:88px}}
+@media(max-width:650px){#newPerformance .np-th{min-width:108px}#newPerformance .np-th:first-child{min-width:138px}#newPerformance .np-col-head{gap:3px}#newPerformance .np-sort-btn,#newPerformance .np-filter-btn{width:20px}}
 </style><script>
 /* 移除舊連結殘留的快取版本參數，不重新導向、不重新下載頁面。 */
 (function(){
@@ -1352,4 +1365,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261123-kpi-sort-filter"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261123-funnel-filter"></script></body></html>
