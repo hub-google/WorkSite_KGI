@@ -300,7 +300,7 @@ function fmt(name,v){
 }
 
 function visibleColumns(conf,depth){
- return conf.levels[depth].filter(col=>state.mode==='year'||!col.includes('成長率')).map(col=>{
+ return conf.levels[depth].filter(col=>state.mode==='year'||!col.includes('同期成長率')).map(col=>{
   if(conf.name!=='台積電'||state.mode==='year')return col;
   const period=state.mode==='month'?'當月':state.mode==='lastweek'?'上週':'昨日';
   return col==='FYC累月差額'?'FYC'+period+'差額':
@@ -410,12 +410,11 @@ function headerCell(tr,col){
 }
 
 function linkable(conf,name,depth){
- return depth>=1&&depth<=4&&({
-  '闔家安康':['總據點數'],
-  '醫護職域':['總據點數','經營據點數'],
-  '台積電':['分派廠區數'],
-  '駐廠職域':['駐廠職域數']
- }[conf.name]||[]).includes(name);
+ // Only the parking table requested site-count drilldown at every level.
+ if(conf.name==='駐廠職域')return depth>=1&&depth<=4&&name==='駐廠職域數';
+ // Retain the existing drilldowns in the home/medical reports (levels 3 and 4).
+ if(depth===3||depth===4)return (conf.name==='闔家安康'||conf.name==='醫護職域')&&name==='總據點數';
+ return false;
 }
 function isDanger(name,value){
  return (typeof value==='number'&&(value<0||(/未達標/.test(name)&&value>0)))||
@@ -423,7 +422,7 @@ function isDanger(name,value){
 }
 function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
  const cell=el('td'),value=metric(col,stats),display=fmt(col,value);
- if(isDanger(col,value))cell.classList.add('np-cell-danger');
+ if(conf.name==='台積電'&&isDanger(col,value))cell.classList.add('np-cell-danger');
  if(linkable(conf,col,depth)){
   const btn=el('button','np-number-link',display);btn.type='button';
   btn.title='查看第 '+depth+' 層職域統計';
@@ -498,7 +497,7 @@ function detailSection(conf,p){
   const row=el('tr');row.append(el('td','',entry.ordinal));
   cols.forEach(c=>{
    const value=siteValue(c,entry.site,p),cell=el('td','',value);
-   if(isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
+   if(conf.name==='台積電'&&isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
    row.append(cell);
   });
   tb.append(row);
@@ -525,9 +524,6 @@ function section(conf,p){
  title.append(el('h2','',conf.name),el('p','',conf.desc));
  head.append(title,el('span','np-pill','第 '+depth+' 層｜'+['','區域中心','業務區','通訊處','業務員'][depth]));sec.append(head);
  const cols=visibleColumns(conf,depth);
- const h=el('div','np-table-head'),left=el('div');
- left.append(el('strong','',['區域中心','業務區','通訊處','業務員'][Math.min(3,state.path.length)]+'績效明細'));
- h.append(left);sec.append(h);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
  headerCell(tr,'組織');cols.forEach(col=>headerCell(tr,col));
  thead.append(tr);table.append(thead);
