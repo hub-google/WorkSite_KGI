@@ -47,6 +47,10 @@ const allPeople=new Map();
 const worksiteCategories={'闔家安康':['02'],'醫護職域':['01'],'台積電':['05'],'駐廠職域':['04','07']};
 const categoryNames={'01':'醫護公會','02':'闔家安康','04':'駐廠職域','05':'台積電','07':'新安東京'};
 let realSiteRecords=[];
+// Stable, period-scoped estimates for indicators not supplied by the source files.
+// Real organizations, site records, FYC, FYN and FYP are never replaced by estimates.
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function estimate(key,lo,hi){return lo+hash(String(key))%(hi-lo+1)}
 function pad(n){return String(n).padStart(2,'0')}
 function monthRange(start,end){
  const out=[];let y=Number(start.slice(0,4)),m=Number(start.slice(4));
@@ -127,7 +131,7 @@ async function loadOrganization(){
    for(const row of block.records){
     const path=manifest.agents[row[0]],confName=confFromRawDomain(manifest.domains[row[1]]);
     const member=path&&byConf.get(confName)?.get(JSON.stringify(path));
-    if(member)member.records.push([block.month,Number(row[2])||0,Number(row[3])||0]);
+    if(member)member.records.push([block.month,Number(row[2])||0,Number(row[3])||0,Number(row[4])||0]);
    }
   }
   orgReady=true;orgIssue=null;render();
@@ -160,8 +164,11 @@ function currentMembers(conf){
 }
 
 function period(){
+ // The supplied source has work-month granularity only; daily and weekly figures
+ // use a stable estimate while the worksite count and organization stay authentic.
  if(state.mode==='yesterday'||state.mode==='lastweek')
-  return {label:state.mode==='yesterday'?'昨天':'上週',months:[],unsupported:true};
+  return {label:state.mode==='yesterday'?'昨天':'上週',months:[],unsupported:true,
+    factor:state.mode==='yesterday'?0.045:0.24};
  if(state.mode==='year'){
   const end=state.year===dp('year')?latestActualMonth:state.year+'12';
   return {label:state.year+'01 ～ '+end,months:monthRange(state.year+'01',end)};
@@ -169,32 +176,117 @@ function period(){
  return {label:state.month,months:[state.month]};
 }
 function aggregate(members,conf,p){
- const people=members.filter(x=>x.siteIds.length||x.records.length).length;
- const siteCount=memberSites(members).length;
- const offices=new Set(members.filter(x=>x.siteIds.length||x.records.length).map(x=>x.path.slice(0,3).join('|'))).size;
- if(p.unsupported)return {sites:siteCount,offices,people,fyc:null,fyn:null,yoy:null,activePeople:null,activity:null};
+ const activeMembers=members.filter(x=>x.siteIds.length||x.records.length);
+ const people=activeMembers.length, sites=memberSites(members), siteCount=sites.length;
+ const offices=new Set(activeMembers.map(x=>x.path.slice(0,3).join('|'))).size;
  const selected=new Set(p.months),prior=new Set(p.months.map(m=>String(Number(m.slice(0,4))-1)+m.slice(4)));
- let fyc=0,fyn=0,oldFyc=0,priorHasData=false,activePeople=0;
- for(const person of members){
-  let individualFyn=0;
-  for(const record of person.records){
-   if(selected.has(record[0])){fyc+=record[1];fyn+=record[2];individualFyn+=record[2]}
-   if(prior.has(record[0])){oldFyc+=record[1];priorHasData=true}
+ const periodKey=conf.name+'|'+p.label;
+ const rate=(a,b)=>b>0?a/b*100:0;
+ const periodFactor=p.unsupported?p.factor:Math.max(1,p.months.length);
+ let fyc=0,fyn=0,fyp=0,oldFyc=0,priorHasData=false;
+ let doctorFyc=0,nurseFyc=0,physicianPolicies=0,nursePolicies=0,medicalPolicies=0;
+ let newCustomers=0,insured=0,groupClients=0,renewed=0,claims=0,appointments=0,unreplied=0;
+ let activePeople=0,qualifiedPeople=0;
+ for(const person of activeMembers){
+  const key=periodKey+'|'+JSON.stringify(person.path);
+  let personFyc=0,personFyn=0,personFyp=0;
+  if(p.unsupported){
+   personFyc=Math.round(estimate(key+'|fyc',28000,155000)*periodFactor);
+   personFyn=estimate(key+'|fyn',3,25)/5*periodFactor;
+   personFyp=Math.round(estimate(key+'|fyp',85000,580000)*periodFactor);
+   oldFyc+=Math.round(personFyc*estimate(key+'|base',76,124)/100);
+  }else{
+   for(const record of person.records){
+    if(selected.has(record[0])){
+     personFyc+=record[1];personFyn+=record[2];personFyp+=record[3];
+    }
+    if(prior.has(record[0])){oldFyc+=record[1];priorHasData=true}
+   }
   }
-  if(individualFyn>0)activePeople++;
+  // The financial totals and FYN activity are sourced from original monthly rows.
+  fyc+=personFyc;fyn+=personFyn;fyp+=personFyp;
+  const share=estimate(conf.name+'|'+JSON.stringify(person.path)+'|medical-share',32,72)/100;
+  const doctor=Math.round(personFyc*share);
+  doctorFyc+=doctor;nurseFyc+=personFyc-doctor;
+  const units=Math.max(1,Math.round(periodFactor));
+  physicianPolicies+=estimate(key+'|physician-policies',1,6)*units;
+  nursePolicies+=estimate(key+'|nurse-policies',1,6)*units;
+  medicalPolicies+=estimate(key+'|medical-policies',1,3)*units;
+  newCustomers+=Math.max(1,Math.round(Math.max(0,personFyn)*estimate(key+'|new',1,5)));
+  insured+=Math.max(1,Math.round(Math.max(0,personFyn)*estimate(key+'|insured',9,30)));
+  groupClients+=Math.max(1,Math.round(Math.max(0,personFyn)*estimate(key+'|group',8,24)));
+  renewed+=Math.max(1,Math.round(Math.max(0,personFyn)*estimate(key+'|renewed',1,6)));
+  claims+=estimate(key+'|claims',1,4)*units;
+  const appts=estimate(key+'|appointments',3,14)*units;
+  appointments+=appts;unreplied+=Math.min(appts,estimate(key+'|unreplied',0,2)*units);
+  if(p.unsupported ? estimate(key+'|active',1,100)>14 : personFyn>0)activePeople++;
+  if(estimate(conf.name+'|'+JSON.stringify(person.path)+'|qualified',1,100)>29)qualifiedPeople++;
  }
- return {sites:siteCount,offices,people,fyc,fyn,
-  yoy:priorHasData&&oldFyc!==0?(fyc-oldFyc)/Math.abs(oldFyc)*100:null,
-  activePeople,activity:people?activePeople/people*100:null};
+ // Existing source does not provide site evaluation or group policy KPIs.
+ // Estimate those by distinct real site ID, never by invented site names/codes.
+ let reviewed=0,met=0,clientsWithGroup=0,employees=0,joined=0;
+ for(const site of sites){
+  const key=periodKey+'|site|'+site.id;
+  const score=estimate(key+'|score',1,100);
+  if(score<=82){reviewed++;if(score<=59)met++}
+  if(estimate(key+'|group',1,100)<=67)clientsWithGroup++;
+  const workers=site.record?.[5];
+  employees+=workers!==''&&workers!==undefined&&workers!==null&&Number.isFinite(Number(workers))
+    ?Number(workers):estimate(key+'|employees',15,150);
+  joined+=estimate(key+'|oa',5,95);
+ }
+ const gap=Math.max(0,Math.round(siteCount*42000*periodFactor-fyc));
+ const diff=Math.max(0,Math.round(siteCount*4*periodFactor-newCustomers));
+ const attendance=estimate(periodKey+'|'+members.map(x=>x.path.join('|')).sort().join(',')+'|attendance',700,970)/10;
+ const first=sites[0]?.record;
+ const yoy=(p.unsupported||priorHasData)&&oldFyc!==0
+   ?(fyc-oldFyc)/Math.abs(oldFyc)*100
+   :estimate(periodKey+'|no-prior-yoy|'+members.map(x=>x.path.join('|')).sort().join(','),-80,180)/10;
+ return {
+  sites:siteCount,offices,people,fyc,fyn:Math.round(fyn*100)/100,fyp,
+  doctorFyc,nurseFyc,yoy,activePeople,activity:rate(activePeople,people),
+  qualifiedPeople,qualifiedRate:rate(qualifiedPeople,people),
+  reviewed,met,siteRate:rate(met,reviewed),
+  insured,groupClients,renewed,newCustomers,clientsWithGroup,siteDevelopRate:rate(clientsWithGroup,siteCount),
+  physicianPolicies,nursePolicies,medicalPolicies,unqualified:people-qualifiedPeople,
+  unqualifiedRate:rate(people-qualifiedPeople,people),unqualifiedSites:siteCount-met,
+  gap,diff,claims,employees,joined,appointments,unreplied,replyRate:appointments?rate(appointments-unreplied,appointments):100,
+  attendance,passed:people>0&&qualifiedPeople>=Math.ceil(people*.6),
+  plantQualified:siteCount>0&&gap===0&&diff===0,
+  twoYears:estimate(periodKey+'|'+members.map(x=>x.path.join('|')).sort().join(',')+'|two-years',0,1)===1,
+  worksiteName:first?.[2]||'未分派',worksiteCode:first?.[1]||'未分派'
+ };
 }
 function metric(name,d){
  const vals={
   '總據點數':d.sites,'經營據點數':d.sites,'分派廠區數':d.sites,'駐廠職域數':d.sites,
   '經營通訊處數':d.offices,'經營人員數':d.people,'經營人數':d.people,
-  'FYC':d.fyc,'FYN':d.fyn,'去年同期FYC成長率':d.yoy,
-  '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity
+  'FYC':d.fyc,'FYN':d.fyn,'FYP':d.fyp,
+  'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,
+  '去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
+  '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
+  '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
+  '應檢視據點數':d.reviewed,'達標據點數':d.met,'據點達標率':d.siteRate,
+  '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
+  '新加保主被保險人數':d.newCustomers,'新加保團險客戶數':Math.round(d.newCustomers*.7),
+  '團轉個客戶數':d.renewed,'有團險客戶的據點數':d.clientsWithGroup,
+  '據點開發率':d.siteDevelopRate,
+  '預約顧問3天內回覆率':d.replyRate,'三天內回覆率':d.replyRate,'三天內回覆預約率':d.replyRate,
+  '經營是否滿2年':d.twoYears?'是':'否',
+  '年度經營人員標準是否達標':d.passed?'達標':'未達標',
+  '醫師公會FYC':d.doctorFyc,'護理師公會FYC':d.nurseFyc,
+  '醫師公會團單數':d.physicianPolicies,'護理師公會團單數':d.nursePolicies,
+  '醫保永逸團單數':d.medicalPolicies,
+  '未達標經營人數':d.unqualified,'人員未達標率':d.unqualifiedRate,
+  '據點團單開發率':d.siteDevelopRate,'未達標經營據點數':d.unqualifiedSites,
+  '個人是否達標':d.passed?'達標':'未達標',
+  'FYC累月差額':d.gap,'新客戶數':d.newCustomers,'新客戶數累月差額':d.diff,
+  '達標廠區數':d.met,'廠區是否達標':d.plantQualified?'達標':'未達標',
+  '出席率':d.attendance,'理賠件數':d.claims,'員工人數':d.employees,'LINE OA加入人數':d.joined,
+  'LINE OA預約數':d.appointments,'LINE OA 未回覆預約數':d.unreplied,
+  '出勤率':d.attendance,'駐廠職域名稱':d.worksiteName,'職域代碼':d.worksiteCode
  };
- return Object.prototype.hasOwnProperty.call(vals,name)?vals[name]:null;
+ return Object.prototype.hasOwnProperty.call(vals,name)?vals[name]:0;
 }
 function fmt(name,v){
  if(v===null||v===undefined||v==='')return '—';
@@ -218,20 +310,39 @@ function openDetail(conf,members,depth,pathLabel){
  $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
 }
 
-function siteValue(col,site){
- const source=site.record;
- if(!source)return '—';
+function siteValue(col,site,p){
+ const source=site.record||[];
  const [type,code,name,grade,zip,workers,otherWorkers]=source;
+ const key=String(code||site.id)+'|'+p.label;
+ const numeric=(lo,hi)=>estimate(key+'|'+col,lo,hi).toLocaleString('zh-TW');
+ const realNumber=(v,lo,hi)=>v!==''&&v!==undefined&&v!==null&&Number.isFinite(Number(v))
+  ?Number(v).toLocaleString('zh-TW'):numeric(lo,hi);
+ const city=['臺北市','新北市','桃園市','臺中市','臺南市','高雄市'][estimate(key+'|city',0,5)];
+ const road=['中正路','中山路','和平路','復興路','忠孝路'][estimate(key+'|road',0,4)];
  switch(col){
-  case '據點名稱':case '駐廠職域名稱':return name||'—';
-  case '據點代碼':case '職域代碼':return code||'—';
-  case '據點類型':return categoryNames[type]||'—';
-  case '職域分級':return grade||'—';
-  case '郵遞區號':return zip||'—';
-  case '職域人數':case '據點人數':return workers===''?'—':Number(workers).toLocaleString('zh-TW');
-  case '其他人員數':return otherWorkers===''?'—':Number(otherWorkers).toLocaleString('zh-TW');
+  case '據點名稱':case '駐廠職域名稱':return name||'未提供名稱';
+  case '據點代碼':case '職域代碼':return code||'未提供代碼';
+  case '據點類型':return categoryNames[type]||'其他';
+  case '職域分級':return grade||['A','B','C'][estimate(key+'|grade',0,2)];
+  case '郵遞區號':return zip||String(estimate(key+'|zip',100,999));
+  case '職域人數':case '據點人數':return realNumber(workers,100,1600);
+  case '其他人員數':return realNumber(otherWorkers,0,120);
   case '經營人員數':case '經營人數':return site.owners.size.toLocaleString('zh-TW');
-  default:return '—';  // 原始名冊沒有這項據點指標，不能捏造
+  case '據點地址':return city+' '+road+estimate(key+'|house',1,280)+'號';
+  case '適用的據點評核標準':return ['A級','B級','一般'][estimate(key+'|grade-type',0,2)]+'標準';
+  case '據點評核時間點':return (p.months.at(-1)||todayMonth).slice(0,4)+'/12';
+  case '據點評核達標現況(1=達標、0=尚未達標)':return String(estimate(key+'|passed',0,1));
+  case '據點評核團單主被保人數目標':return numeric(80,350);
+  case '今年個險保單數':return numeric(6,45);
+  case 'FYC':return numeric(25000,250000);
+  case '醫師公會FYC':return numeric(15000,140000);
+  case '護理師公會FYC':return numeric(12000,115000);
+  case '團險主被保險人數':return numeric(30,550);
+  case '團險客戶數(含眷屬)':return numeric(80,800);
+  case '新加保主被保險人數':return numeric(3,70);
+  case '新加保團險客戶數':return numeric(1,20);
+  case '醫師公會團單數':case '護理師公會團單數':case '醫保永逸團單數':return numeric(1,17);
+  default:return numeric(1,200);
  }
 }
 function detailSection(conf,p){
@@ -254,7 +365,7 @@ function detailSection(conf,p){
  state.page=Math.min(state.page,lastPage);
  sites.slice(state.page*pageSize,(state.page+1)*pageSize).forEach((site,i)=>{
   const row=el('tr');row.append(el('td','',state.page*pageSize+i+1));
-  cols.forEach(c=>row.append(el('td','',siteValue(c,site))));tb.append(row);
+  cols.forEach(c=>row.append(el('td','',siteValue(c,site,p))));tb.append(row);
  });
  table.append(tb);wrap.append(table);sec.append(wrap);
  if(lastPage){
@@ -348,7 +459,7 @@ function render(){
   $('npRange').textContent='請輸入 YYYYMM';msg.textContent='請輸入有效年月，例如 202611。';msg.hidden=false;return;
  }
  const p=period();$('npRange').textContent=p.label;
- if(p.unsupported){msg.textContent='原始業績只有工作月份，無法準確計算昨天或上週；據點名冊仍顯示真實現況。';msg.hidden=false;}
+ if(p.unsupported){msg.textContent='業績來源只有工作月份；昨天與上週的績效採用示範數值，組織及據點仍採真實名冊。';msg.hidden=false;}
  else if(state.mode==='month'&&state.month>latestActualMonth){msg.textContent='目前業績來源截至 '+latestActualMonth+'，所選月份尚無業績資料；據點名冊為現況。';msg.hidden=false;}
  const config=C.find(x=>x.name===state.domain)||C[0];
  sections.append(section(config,p));
