@@ -395,12 +395,67 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFilterPopover()});
 window.addEventListener('resize',closeFilterPopover);
 document.addEventListener('scroll',e=>{if(activeFilterPopover&&!activeFilterPopover.contains(e.target))closeFilterPopover()},true);
+// A shared temporary definition tooltip, placed outside the scrollable table.
+let definitionTip=null,definitionTrigger=null,definitionPinned=false;
+const metricDefinitions=Object.create(null);
+function closeDefinition(){
+ if(definitionTip)definitionTip.remove();
+ if(definitionTrigger)definitionTrigger.removeAttribute('aria-describedby');
+ definitionTip=null;definitionTrigger=null;definitionPinned=false;
+}
+function showDefinition(trigger,col,pinned=false){
+ if(definitionTrigger===trigger&&definitionTip){
+  definitionPinned=pinned||definitionPinned;return;
+ }
+ closeDefinition();
+ const tip=el('div','np-definition-tooltip',metricDefinitions[col]||'定義待補');
+ tip.id='npMetricDefinition';tip.setAttribute('role','tooltip');
+ document.body.append(tip);
+ definitionTip=tip;definitionTrigger=trigger;definitionPinned=pinned;
+ trigger.setAttribute('aria-describedby',tip.id);
+ const rect=trigger.getBoundingClientRect(),viewport=document.documentElement.clientWidth;
+ const width=tip.offsetWidth,height=tip.offsetHeight;
+ const left=Math.max(8,Math.min(viewport-width-8,rect.left+(rect.width-width)/2));
+ const above=rect.top-height-8;
+ tip.style.left=left+'px';
+ tip.style.top=(above>=8?above:Math.min(window.innerHeight-height-8,rect.bottom+8))+'px';
+}
+document.addEventListener('pointerdown',e=>{
+ if(definitionTrigger&&!definitionTrigger.contains(e.target))closeDefinition();
+},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDefinition()});
+window.addEventListener('resize',closeDefinition);
+document.addEventListener('scroll',closeDefinition,true);
+function sortIcon(direction){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('viewBox','0 0 24 24');
+ svg.setAttribute('width','16');svg.setAttribute('height','16');
+ svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');
+ svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');
+ svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
+ const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+ path.setAttribute('d',direction===1?'M12 20V4 M6 10l6-6 6 6':'M12 4v16 M6 14l6 6 6-6');
+ svg.append(path);return svg;
+}
 function headerCell(tr,col){
  const th=el('th','np-th'),box=el('div','np-col-head');
- const label=el('span','np-col-label',col);
- const sort=el('button','np-sort-btn',(state.sort.col===col?(state.sort.dir===1?'↑':'↓'):'↕'));
- sort.type='button';sort.title='排序：'+col+'（點擊切換升降冪）';
- sort.setAttribute('aria-label','排序 '+col);
+ const label=el('button','np-col-label',col);
+ label.type='button';label.setAttribute('aria-label',col+'，查看指標定義');
+ // Mouse hover and keyboard focus are temporary; a touch/click toggles the box.
+ label.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'||e.pointerType==='pen')showDefinition(label,col)});
+ label.addEventListener('pointerleave',()=>{if(definitionTrigger===label&&!definitionPinned)closeDefinition()});
+ label.addEventListener('focus',()=>{if(label.matches(':focus-visible'))showDefinition(label,col)});
+ label.addEventListener('blur',()=>{if(definitionTrigger===label)closeDefinition()});
+ label.onclick=()=>{
+  if(definitionTrigger===label&&definitionPinned)closeDefinition();
+  else showDefinition(label,col,true);
+ };
+ const sorted=state.sort.col===col,direction=sorted?state.sort.dir:1;
+ const sort=el('button','np-sort-btn'+(sorted?' is-active':''));
+ sort.append(sortIcon(direction));sort.type='button';
+ th.setAttribute('aria-sort',sorted?(direction===1?'ascending':'descending'):'none');
+ sort.title=col+'：'+(sorted?(direction===1?'正序（點擊改為反序）':'反序（點擊改為正序）'):'點擊正序排列');
+ sort.setAttribute('aria-label',sort.title);
  sort.onclick=()=>{state.sort=state.sort.col===col?{col,dir:-state.sort.dir}:{col,dir:1};state.page=0;render()};
  const filter=el('button','np-filter-btn'+(state.filters[col]?' is-active':''));filter.type='button';
  filter.append(filterIcon());filter.title='篩選 '+col+(state.filters[col]?'（已套用）':'');
@@ -641,6 +696,7 @@ function breadcrumb(){
 }
 
 function render(){
+ closeDefinition();
  closeFilterPopover();
  if(!root)return;
  document.querySelectorAll('[data-np-mode]').forEach(btn=>{
