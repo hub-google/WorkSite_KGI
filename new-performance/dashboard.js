@@ -426,17 +426,6 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDefinition()});
 window.addEventListener('resize',closeDefinition);
 document.addEventListener('scroll',closeDefinition,true);
-function sortIcon(direction){
- const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
- svg.setAttribute('viewBox','0 0 24 24');
- svg.setAttribute('width','16');svg.setAttribute('height','16');
- svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');
- svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');
- svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
- const path=document.createElementNS('http://www.w3.org/2000/svg','path');
- path.setAttribute('d',direction===1?'M12 20V4 M6 10l6-6 6 6':'M12 4v16 M6 14l6 6 6-6');
- svg.append(path);return svg;
-}
 function headerCell(tr,col){
  const th=el('th','np-th'),box=el('div','np-col-head');
  const label=el('button','np-col-label',col);
@@ -452,7 +441,7 @@ function headerCell(tr,col){
  };
  const sorted=state.sort.col===col,direction=sorted?state.sort.dir:1;
  const sort=el('button','np-sort-btn'+(sorted?' is-active':''));
- sort.append(sortIcon(direction));sort.type='button';
+ sort.textContent=direction===1?'▲':'▼';sort.type='button';
  th.setAttribute('aria-sort',sorted?(direction===1?'ascending':'descending'):'none');
  sort.title=col+'：'+(sorted?(direction===1?'正序（點擊改為反序）':'反序（點擊改為正序）'):'點擊正序排列');
  sort.setAttribute('aria-label',sort.title);
