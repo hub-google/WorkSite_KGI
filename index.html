@@ -344,6 +344,28 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 .np-filter-actions .np-filter-clear{margin-right:auto}
 .np-filter-actions .np-filter-apply{color:#fff;background:#276e9d;border-color:#276e9d}
 .np-filter-actions button:hover{filter:brightness(.96)}
+.np-filter-popover{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.np-excel-tabs{display:flex;gap:4px;padding:3px;background:#edf3f7;border-radius:8px;margin-bottom:12px}
+.np-excel-tabs button{flex:1;border:0;border-radius:6px;padding:8px 5px;font:inherit;color:#526b80;background:transparent;white-space:nowrap}
+.np-excel-tabs button.is-active{background:#fff;color:#235778;font-weight:750;box-shadow:0 1px 4px #1c385018}
+.np-excel-tabs button:disabled{opacity:.4;cursor:not-allowed}
+.np-excel-pane[hidden]{display:none!important}
+.np-excel-all,.np-excel-option{display:flex;align-items:center;gap:9px;min-height:33px;cursor:pointer}
+.np-excel-all{padding:7px 4px 5px;font-weight:700}
+.np-excel-all input,.np-excel-option input{width:16px;height:16px;flex:none;margin:0;accent-color:#276e9d}
+.np-excel-list{border:1px solid #d7e2ea;border-radius:7px;padding:4px;max-height:min(220px,30dvh);overflow-y:auto;overscroll-behavior:contain;background:#fff}
+.np-excel-option{padding:5px 6px;border-radius:4px}
+.np-excel-option:hover{background:#eff6fb}
+.np-excel-option-text{flex:1;min-width:0;overflow-wrap:anywhere}
+.np-excel-option-count{color:#8697a6;font-size:11px;font-variant-numeric:tabular-nums}
+.np-excel-count,.np-excel-empty{font-size:12px;color:#758a9a;padding:7px 0}
+.np-excel-empty{text-align:center;padding:16px 5px}
+.np-excel-bound{display:block;margin:12px 0}
+.np-excel-bound span{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+.np-excel-error{font-size:12px;color:#b4232d;margin:4px 0 8px}
+.np-filter-actions{margin-top:12px}
+@media(max-width:650px){.np-filter-popover{padding:12px}.np-excel-option{min-height:40px}.np-excel-list{max-height:min(220px,28dvh)}.np-filter-actions button{padding:9px 10px}}
+
 #newPerformance .np-table .np-cell-danger,
 #newPerformance .np-table .np-cell-danger .np-number-link{color:#bf1f28!important;font-weight:850}
 #newPerformance .np-table .np-grand-total .np-cell-danger,
@@ -1373,4 +1395,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261124-sort-triangle"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261124-excel-filter"></script></body></html>
