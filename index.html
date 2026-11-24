@@ -318,7 +318,14 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 #newPerformance .np-th:first-child{min-width:146px}
 #newPerformance .np-col-head{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap}
 #newPerformance .np-th:first-child .np-col-head{justify-content:flex-start}
-#newPerformance .np-col-label{font-weight:750}
+#newPerformance .np-col-label{display:inline-block;border:0;background:transparent;color:inherit;font:inherit;font-weight:750;white-space:nowrap;cursor:help;padding:3px 0;border-radius:3px;touch-action:manipulation}
+#newPerformance .np-col-label:hover{color:#115e91;text-decoration:underline dotted;text-underline-offset:4px}
+#newPerformance .np-col-label:focus-visible{outline:2px solid #2780b4;outline-offset:3px}
+.np-definition-tooltip{position:fixed;z-index:10060;max-width:calc(100vw - 16px);box-sizing:border-box;padding:8px 13px;border:1px solid #cddfeb;border-radius:7px;background:#fff;color:#294964;font:13px/1.5 system-ui,"Noto Sans TC",sans-serif;box-shadow:0 5px 16px #1c385026;pointer-events:none;white-space:normal}
+#newPerformance .np-sort-btn{opacity:.65}
+#newPerformance .np-sort-btn.is-active{opacity:1;color:#0b6099;background:#c9e6f8}
+#newPerformance .np-sort-btn:hover,#newPerformance .np-sort-btn:focus-visible{opacity:1}
+
 #newPerformance .np-sort-btn,
 #newPerformance .np-filter-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:22px;height:24px;border:0;border-radius:5px;background:transparent;color:#53718a;font-size:17px;line-height:1;font-weight:800;padding:0;cursor:pointer}
 #newPerformance .np-sort-btn:hover,
@@ -1365,4 +1372,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261124-parking-site-detail"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261124-sort-definition"></script></body></html>
