@@ -314,20 +314,40 @@ function normalizedValue(value){
  const raw=String(value??'').replace(/,/g,'').trim();
  return /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)%?$/.test(raw)?Number(raw.replace('%','')):String(value??'');
 }
-function passesFilter(value,query){
- const q=String(query||'').trim();if(!q)return true;
- const v=normalizedValue(value);
- const m=q.replace(/,/g,'').match(/^(>=|<=|!=|>|<|=)?\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%?$/);
- if(m&&typeof v==='number'){
-  const n=Number(m[2]),op=m[1]||'=';
-  if(op==='>')return v>n;if(op==='>=')return v>=n;
-  if(op==='<')return v<n;if(op==='<=')return v<=n;
-  if(op==='!=')return v!==n;return v===n;
- }
- return String(value??'').toLocaleLowerCase('zh-TW').includes(q.toLocaleLowerCase('zh-TW'));
+function filterNumber(value){
+ if(value===null||value===undefined||value==='')return null;
+ const n=normalizedValue(value);
+ return typeof n==='number'&&Number.isFinite(n)?n:null;
 }
-function orderedRows(entries,valueOf){
- const out=entries.filter(entry=>Object.entries(state.filters).every(([col,q])=>passesFilter(valueOf(entry,col),q)));
+function filterDisplay(col,value){
+ return value===null||value===undefined||value===''?'—':String(value);
+}
+function passesFilter(value,filter,display){
+ if(!filter)return true;
+ if(filter.mode==='values')return filter.selected.has(display);
+ if(filter.mode==='range'){
+  const n=filterNumber(value);
+  return n!==null&&(filter.min===null||n>=filter.min)&&(filter.max===null||n<=filter.max);
+ }
+ return true;
+}
+function columnOptions(col,entries,valueOf,displayOf){
+ const options=new Map();
+ let hasNumeric=false;
+ for(const entry of entries){
+  const raw=valueOf(entry,col),label=filterDisplay(col,displayOf(entry,col));
+  const number=filterNumber(raw);
+  if(number!==null)hasNumeric=true;
+  if(!options.has(label))options.set(label,{label,number,count:0});
+  options.get(label).count++;
+ }
+ const values=[...options.values()].sort((a,b)=>a.number!==null&&b.number!==null?a.number-b.number:a.label.localeCompare(b.label,'zh-Hant',{numeric:true}));
+ // Identifiers such as a numeric-looking company code or postal code are text, not quantities.
+ const numeric=hasNumeric&&!/名稱|代碼|郵遞區號|地址|類型|分級|標準$|時間點|是否|^組織$|^駐廠人員$|^駐廠人員通訊處$/.test(col);
+ return {values,numeric};
+}
+function orderedRows(entries,valueOf,displayOf=valueOf){
+ const out=entries.filter(entry=>Object.entries(state.filters).every(([col,q])=>passesFilter(valueOf(entry,col),q,filterDisplay(col,displayOf(entry,col)))));
  if(state.sort.col)out.sort((a,b)=>{
   const va=normalizedValue(valueOf(a,state.sort.col)),vb=normalizedValue(valueOf(b,state.sort.col));
   const n=typeof va==='number'&&typeof vb==='number'?va-vb:String(va).localeCompare(String(vb),'zh-Hant',{numeric:true});
@@ -352,42 +372,99 @@ function filterIcon(){
  path.setAttribute('d','M4 4h16l-6.5 8v6l-3 2v-8L4 4Z');
  svg.append(path);return svg;
 }
-function openFilterPopover(trigger,col){
+function openFilterPopover(trigger,col,entries,valueOf,displayOf){
  if(activeFilterTrigger===trigger){closeFilterPopover();return}
- closeFilterPopover();
+ closeFilterPopover();closeDefinition();
+ const {values,numeric}=columnOptions(col,entries,valueOf,displayOf);
+ const previous=state.filters[col];
+ let mode=previous?.mode==='range'&&numeric?'range':'values';
+ const selected=new Set(previous?.mode==='values'?previous.selected:values.map(v=>v.label));
  const panel=el('div','np-filter-popover');panel.setAttribute('role','dialog');
  panel.setAttribute('aria-label','篩選 '+col);
  const title=el('div','np-filter-title','篩選｜'+col);
- const input=el('input','np-filter-value');input.type='text';
- input.value=state.filters[col]||'';input.placeholder='輸入篩選條件';
- input.setAttribute('aria-label','篩選條件');
- const hint=el('div','np-filter-hint','文字包含；數值可輸入 >100、<=50、=0、!=0');
+ const tabs=el('div','np-excel-tabs');
+ const valueTab=el('button','','勾選篩選'),rangeTab=el('button','','數值區間');
+ for(const tab of [valueTab,rangeTab])tab.type='button';
+ rangeTab.disabled=!numeric;
+ if(!numeric)rangeTab.title='此欄位為文字，請使用勾選篩選';
+ tabs.append(valueTab,rangeTab);
+ const valuePane=el('div','np-excel-pane'),rangePane=el('div','np-excel-pane');
+ const search=el('input','np-filter-value');search.type='search';search.placeholder='搜尋數值或文字';search.setAttribute('aria-label','搜尋欄位值');
+ const count=el('div','np-excel-count');
+ const selectAllLabel=el('label','np-excel-all');
+ const selectAll=el('input');selectAll.type='checkbox';
+ selectAllLabel.append(selectAll,el('span','','全選（目前清單）'));
+ const list=el('div','np-excel-list');
+ let shown=values;
+ function refreshCount(){
+  count.textContent='已勾選 '+values.filter(v=>selected.has(v.label)).length+' / '+values.length+' 種值';
+  const checked=shown.filter(v=>selected.has(v.label)).length;
+  selectAll.checked=shown.length>0&&checked===shown.length;
+  selectAll.indeterminate=checked>0&&checked<shown.length;
+  selectAll.disabled=shown.length===0;
+ }
+ function refreshList(){
+  const q=search.value.trim().toLocaleLowerCase('zh-TW');
+  shown=values.filter(v=>v.label.toLocaleLowerCase('zh-TW').includes(q));
+  list.replaceChildren();
+  if(!shown.length)list.append(el('div','np-excel-empty','沒有符合的欄位值'));
+  for(const v of shown){
+   const label=el('label','np-excel-option'),check=el('input');check.type='checkbox';check.checked=selected.has(v.label);
+   check.onchange=()=>{if(check.checked)selected.add(v.label);else selected.delete(v.label);refreshCount()};
+   label.append(check,el('span','np-excel-option-text',v.label),el('span','np-excel-option-count',v.count));
+   list.append(label);
+  }
+  refreshCount();
+ }
+ search.oninput=refreshList;
+ selectAll.onchange=()=>{for(const v of shown){if(selectAll.checked)selected.add(v.label);else selected.delete(v.label)}refreshList()};
+ valuePane.append(search,selectAllLabel,list,count);
+ const minLabel=el('label','np-excel-bound'),maxLabel=el('label','np-excel-bound');
+ const min=el('input','np-filter-value'),max=el('input','np-filter-value');
+ for(const input of [min,max]){input.type='number';input.step='any';input.inputMode='decimal';input.placeholder='不限'}
+ min.value=previous?.mode==='range'&&previous.min!==null?String(previous.min):'';
+ max.value=previous?.mode==='range'&&previous.max!==null?String(previous.max):'';
+ minLabel.append(el('span','','最小值（含）'),min);maxLabel.append(el('span','','最大值（含）'),max);
+ const hint=el('div','np-filter-hint',col.includes('率')?'百分比請輸入數字，例如 80 代表 80%。':'依原始數值篩選；金額以元為單位，留空表示不限。');
+ const error=el('div','np-excel-error');error.setAttribute('role','alert');
+ rangePane.append(minLabel,maxLabel,hint,error);
+ function switchMode(next){
+  mode=next;valuePane.hidden=next!=='values';rangePane.hidden=next!=='range';
+  valueTab.classList.toggle('is-active',next==='values');rangeTab.classList.toggle('is-active',next==='range');
+  valueTab.setAttribute('aria-pressed',String(next==='values'));rangeTab.setAttribute('aria-pressed',String(next==='range'));
+ }
+ valueTab.onclick=()=>switchMode('values');rangeTab.onclick=()=>{if(numeric)switchMode('range')};
  const actions=el('div','np-filter-actions');
- const clear=el('button','np-filter-clear','清除'),cancel=el('button','np-filter-cancel','取消'),apply=el('button','np-filter-apply','套用');
+ const clear=el('button','np-filter-clear','清除篩選'),cancel=el('button','np-filter-cancel','取消'),apply=el('button','np-filter-apply','套用');
  for(const button of [clear,cancel,apply])button.type='button';
- const save=()=>{
-  const value=input.value.trim();
-  if(value)state.filters[col]=value;
-  else delete state.filters[col];
-  state.page=0;closeFilterPopover();render();
- };
- clear.onclick=()=>{input.value='';save()};
+ const commit=()=>{state.page=0;closeFilterPopover();render()};
+ clear.onclick=()=>{delete state.filters[col];commit()};
  cancel.onclick=closeFilterPopover;
- apply.onclick=save;
- input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();save()}else if(e.key==='Escape'){e.preventDefault();closeFilterPopover();trigger.focus()}};
- actions.append(clear,cancel,apply);panel.append(title,input,hint,actions);
+ apply.onclick=()=>{
+  if(mode==='values'){
+   if(values.every(v=>selected.has(v.label)))delete state.filters[col];
+   else state.filters[col]={mode:'values',selected:new Set(selected)};
+  }else{
+   const lo=min.value.trim()===''?null:Number(min.value),hi=max.value.trim()===''?null:Number(max.value);
+   if(min.validity.badInput||max.validity.badInput||(lo!==null&&!Number.isFinite(lo))||(hi!==null&&!Number.isFinite(hi))){error.textContent='請輸入有效數字';return}
+   if(lo!==null&&hi!==null&&lo>hi){error.textContent='最小值不能大於最大值';return}
+   if(lo===null&&hi===null)delete state.filters[col];
+   else state.filters[col]={mode:'range',min:lo,max:hi};
+  }
+  commit();
+ };
+ for(const input of [search,min,max])input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();apply.onclick()}else if(e.key==='Escape'){e.preventDefault();closeFilterPopover();trigger.focus()}};
+ actions.append(clear,cancel,apply);panel.append(title,tabs,valuePane,rangePane,actions);
  document.body.append(panel);
- activeFilterPopover=panel;activeFilterTrigger=trigger;
- trigger.setAttribute('aria-expanded','true');
- const rect=trigger.getBoundingClientRect();
- const viewportWidth=document.documentElement.clientWidth;
- const panelWidth=Math.min(290,viewportWidth-24);
+ activeFilterPopover=panel;activeFilterTrigger=trigger;trigger.setAttribute('aria-expanded','true');
+ refreshList();switchMode(mode);
+ const rect=trigger.getBoundingClientRect(),viewportWidth=document.documentElement.clientWidth;
+ const panelWidth=Math.min(320,viewportWidth-24);
  panel.style.width=panelWidth+'px';
  panel.style.left=Math.max(12,Math.min(viewportWidth-panelWidth-12,rect.right-panelWidth))+'px';
- const below=rect.bottom+8;
- const roomBelow=window.innerHeight-below;
- panel.style.top=(roomBelow<190&&rect.top>roomBelow?Math.max(12,rect.top-196):below)+'px';
- input.focus();input.select();
+ const height=panel.offsetHeight,below=rect.bottom+8;
+ panel.style.top=Math.max(12,Math.min(window.innerHeight-height-12,below+height>window.innerHeight&&rect.top-height-8>=12?rect.top-height-8:below))+'px';
+ // Do not auto-open the mobile keyboard when the user is selecting checkboxes.
 }
 document.addEventListener('pointerdown',e=>{
  if(activeFilterPopover&&!activeFilterPopover.contains(e.target)&&!activeFilterTrigger?.contains(e.target))closeFilterPopover();
@@ -426,7 +503,7 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDefinition()});
 window.addEventListener('resize',closeDefinition);
 document.addEventListener('scroll',closeDefinition,true);
-function headerCell(tr,col){
+function headerCell(tr,col,entries,valueOf,displayOf){
  const th=el('th','np-th'),box=el('div','np-col-head');
  const label=el('button','np-col-label',col);
  label.type='button';label.setAttribute('aria-label',col+'，查看指標定義');
@@ -450,7 +527,7 @@ function headerCell(tr,col){
  filter.append(filterIcon());filter.title='篩選 '+col+(state.filters[col]?'（已套用）':'');
  filter.setAttribute('aria-label','篩選 '+col);
  filter.setAttribute('aria-haspopup','dialog');filter.setAttribute('aria-expanded','false');
- filter.onclick=()=>openFilterPopover(filter,col);
+ filter.onclick=()=>openFilterPopover(filter,col,entries,valueOf,displayOf);
  box.append(label,sort,filter);th.append(box);tr.append(th);
 }
 
@@ -591,21 +668,22 @@ function detailSection(conf,p){
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
  const allRows=parking?parkingRows(data.members,conf,p):allSites.map((site,i)=>({site,ordinal:i+1}));
  const valueOf=(entry,col)=>col==='序號'?entry.ordinal:parking?entry.values[col]:siteValue(col,entry.site,p);
- const rows=orderedRows(allRows,valueOf);
+ const displayOf=(entry,col)=>{const value=valueOf(entry,col);return col==='序號'?value:parking?(col.startsWith('駐廠頻率')?String(value):fmt(col,value)):value};
+ const rows=orderedRows(allRows,valueOf,displayOf);
  heading.append(el('h2','',conf.name+'｜第 '+data.depth+' 層職域統計'),
   el('p','',data.pathLabel+' · '+rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+(parking?' 筆駐廠分派':' 筆據點')));
  const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
  back.type='button';back.onclick=()=>{state.detail=null;resetTable();render()};
  head.append(heading,back);sec.append(head);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- headerCell(tr,'序號');cols.forEach(x=>headerCell(tr,x));
+ headerCell(tr,'序號',allRows,valueOf,displayOf);cols.forEach(x=>headerCell(tr,x,allRows,valueOf,displayOf));
  thead.append(tr);table.append(thead);
  const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(rows.length/pageSize)-1);
  state.page=Math.min(state.page,lastPage);
  rows.slice(state.page*pageSize,(state.page+1)*pageSize).forEach(entry=>{
   const row=el('tr');row.append(el('td','',entry.ordinal));
   cols.forEach(c=>{
-   const value=valueOf(entry,c),display=parking?(c.startsWith('駐廠頻率')?String(value):fmt(c,value)):value,cell=el('td','',display);
+   const value=valueOf(entry,c),cell=el('td','',displayOf(entry,c));
    if(conf.name==='台積電'&&isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
    row.append(cell);
   });
@@ -634,13 +712,15 @@ function section(conf,p){
  sec.setAttribute('aria-label',conf.name+'績效表');
  const cols=visibleColumns(conf,depth);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- headerCell(tr,'組織');cols.forEach(col=>headerCell(tr,col));
- thead.append(tr);table.append(thead);
- const tb=el('tbody');
  const entries=groups(members,state.path.length).map(([label,group],ordinal)=>({
   label,group,stats:aggregate(group,conf,p),ordinal
  })).filter(entry=>entry.stats.sites>0);
- const visible=orderedRows(entries,(entry,col)=>col==='組織'?entry.label:metric(col,entry.stats));
+ const valueOf=(entry,col)=>col==='組織'?entry.label:metric(col,entry.stats);
+ const displayOf=(entry,col)=>col==='組織'?entry.label:fmt(col,valueOf(entry,col));
+ headerCell(tr,'組織',entries,valueOf,displayOf);cols.forEach(col=>headerCell(tr,col,entries,valueOf,displayOf));
+ thead.append(tr);table.append(thead);
+ const tb=el('tbody');
+ const visible=orderedRows(entries,valueOf,displayOf);
  for(const entry of visible){
   const {label,group,stats}=entry,row=el('tr'),name=el('td','np-level-name');
   if(state.path.length<3){
