@@ -31,6 +31,7 @@ const C=[
   4:['駐廠職域名稱','職域代碼','駐廠職域數','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
 ];
 
+const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
 const root=document.getElementById('newPerformance');
 if(!root)return;
 const el=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
@@ -131,7 +132,7 @@ async function loadOrganization(){
    for(const row of block.records){
     const path=manifest.agents[row[0]],confName=confFromRawDomain(manifest.domains[row[1]]);
     const member=path&&byConf.get(confName)?.get(JSON.stringify(path));
-    if(member)member.records.push([block.month,Number(row[2])||0,Number(row[3])||0,Number(row[4])||0]);
+    if(member)member.records.push([block.month,Number(row[2])||0,Number(row[3])||0,Number(row[4])||0,manifest.domains[row[1]]]);
    }
   }
   orgReady=true;orgIssue=null;render();
@@ -300,7 +301,7 @@ function fmt(name,v){
 }
 
 function visibleColumns(conf,depth){
- return conf.levels[depth].filter(col=>state.mode==='year'||!col.includes('同期成長率')).map(col=>{
+ return conf.levels[depth].filter(col=>state.mode==='year'||(!col.includes('同期成長率')&&!(conf.name==='駐廠職域'&&col.includes('成長率')))).map(col=>{
   if(conf.name!=='台積電'||state.mode==='year')return col;
   const period=state.mode==='month'?'當月':state.mode==='lastweek'?'上週':'昨日';
   return col==='FYC累月差額'?'FYC'+period+'差額':
@@ -411,7 +412,7 @@ function headerCell(tr,col){
 
 function linkable(conf,name,depth){
  // Only the parking table requested site-count drilldown at every level.
- if(conf.name==='駐廠職域')return depth>=1&&depth<=4&&name==='駐廠職域數';
+ if(conf.name==='駐廠職域')return depth>=1&&depth<=4&&(name==='駐廠職域數'||(depth===4&&name==='駐廠職域名稱'));
  // Retain the existing drilldowns in the home/medical reports (levels 3 and 4).
  if(depth===3||depth===4)return (conf.name==='闔家安康'||conf.name==='醫護職域')&&name==='總據點數';
  return false;
@@ -471,6 +472,68 @@ function siteValue(col,site,p){
  }
 }
 
+// Source performance is by agent and domain, not by individual company.
+// Allocate source totals among actual assigned companies, preserving source totals.
+function parkingRows(members,conf,p){
+ const selected=new Set(p.months),prior=new Set(p.months.map(m=>String(Number(m.slice(0,4))-1)+m.slice(4)));
+ const sites=memberSites(members),byId=new Map(sites.map(site=>[site.id,{site,assignments:[],fyc:0,fyn:0,fyp:0,prior:0,claims:0,appointments:0,unreplied:0,timely:0}]));
+ for(const member of members){
+  const ids=member.siteIds.filter(id=>byId.has(id));
+  if(!ids.length)continue;
+  const stats=aggregate([member],conf,p),personKey=JSON.stringify(member.path);
+  for(const id of ids){
+   const key='parking|'+personKey+'|'+id;
+   byId.get(id).assignments.push({member,frequency:estimate(key+'|frequency',1,6),attendance:stats.attendance});
+  }
+  const allocate=(targets,field,value)=>{
+   if(!targets.length)return;
+   const units=Math.round(value*100),base=Math.trunc(units/targets.length),remainder=units-base*targets.length;
+   targets.forEach((id,i)=>{byId.get(id)[field]+=(base+(i<Math.abs(remainder)?Math.sign(remainder):0))/100});
+  };
+  if(p.unsupported){
+   allocate(ids,'fyc',stats.fyc);allocate(ids,'fyn',stats.fyn);allocate(ids,'fyp',stats.fyp);
+  }else{
+   for(const record of member.records){
+    const type=record[4]==='新安東京'?'07':'04';
+    const matching=ids.filter(id=>String(byId.get(id).site.record?.[0]).padStart(2,'0')===type);
+    const targets=matching.length?matching:ids;
+    if(selected.has(record[0])){allocate(targets,'fyc',record[1]);allocate(targets,'fyn',record[2]);allocate(targets,'fyp',record[3]);}
+    if(prior.has(record[0]))allocate(targets,'prior',record[1]);
+   }
+  }
+  const splitCount=(value,i)=>Math.floor(value/ids.length)+(i<value%ids.length?1:0);
+  ids.forEach((id,i)=>{
+   const info=byId.get(id),appts=splitCount(stats.appointments,i),unreplied=Math.min(appts,splitCount(stats.unreplied,i));
+   info.claims+=splitCount(stats.claims,i);info.appointments+=appts;info.unreplied+=unreplied;
+   const completed=appts-unreplied;
+   info.timely+=Math.round(completed*estimate('parking|'+personKey+'|'+id+'|'+p.label+'|reply',75,100)/100);
+  });
+ }
+ const rows=[];
+ for(const info of byId.values()){
+  const [,code,name,,,workers]=info.site.record||[];
+  const key='parking|site|'+info.site.id;
+  const employees=workers!==''&&workers!==undefined&&workers!==null&&Number.isFinite(Number(workers))?Number(workers):estimate(key+'|employees',15,150);
+  const joined=Math.round(employees*estimate(key+'|oa-share',20,85)/100);
+  const completed=info.appointments-info.unreplied;
+  for(const a of info.assignments){
+   const personKey='parking|'+JSON.stringify(a.member.path)+'|'+info.site.id;
+   const hours=a.frequency===6?estimate(personKey+'|irregular-hours',1,8):a.frequency*estimate(personKey+'|hours-per-visit',2,6);
+   rows.push({site:info.site,ordinal:rows.length+1,values:{
+    '駐廠職域名稱':name||'未提供名稱','職域代碼':code||'未提供代碼',
+    '駐廠人員':a.member.path[3],'駐廠人員通訊處':a.member.path[2],
+    '駐廠頻率(1周駐廠次數)':a.frequency===6?'不定期':a.frequency,
+    '駐廠時數(一周駐廠時數)':hours,
+    'FYC':Math.round(info.fyc*100)/100,'FYC成長率':info.prior!==0?(info.fyc-info.prior)/Math.abs(info.prior)*100:null,
+    'FYN':Math.round(info.fyn*100)/100,'FYP':Math.round(info.fyp*100)/100,
+    '理賠件數':info.claims,'員工人數':employees,'LINE OA加入人數':joined,
+    'LINE OA預約數':info.appointments,'LINE OA 未回覆預約數':info.unreplied,
+    '三天內回覆預約率':completed?info.timely/completed*100:null,'出勤率':a.attendance
+   }});
+  }
+ }
+ return rows;
+}
 function detailSection(conf,p){
  const data=state.detail,allSites=memberSites(data.members);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
@@ -478,13 +541,15 @@ function detailSection(conf,p){
  const fallback=conf.name==='台積電'
   ?['據點名稱','職域代碼','經營人員數','FYC','今年個險保單數','據點地址']
   :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
- const cols=[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
+ const parking=conf.name==='駐廠職域';
+ const cols=parking?parkingColumns.filter(c=>state.mode==='year'||c!=='FYC成長率'):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
- const allRows=allSites.map((site,i)=>({site,ordinal:i+1}));
- const rows=orderedRows(allRows,(entry,col)=>col==='序號'?entry.ordinal:siteValue(col,entry.site,p));
+ const allRows=parking?parkingRows(data.members,conf,p):allSites.map((site,i)=>({site,ordinal:i+1}));
+ const valueOf=(entry,col)=>col==='序號'?entry.ordinal:parking?entry.values[col]:siteValue(col,entry.site,p);
+ const rows=orderedRows(allRows,valueOf);
  heading.append(el('h2','',conf.name+'｜第 '+data.depth+' 層職域統計'),
-  el('p','',data.pathLabel+' · '+rows.length+(rows.length!==allSites.length?' / '+allSites.length:'')+' 筆據點'));
+  el('p','',data.pathLabel+' · '+rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+(parking?' 筆駐廠分派':' 筆據點')));
  const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
  back.type='button';back.onclick=()=>{state.detail=null;resetTable();render()};
  head.append(heading,back);sec.append(head);
@@ -496,7 +561,7 @@ function detailSection(conf,p){
  rows.slice(state.page*pageSize,(state.page+1)*pageSize).forEach(entry=>{
   const row=el('tr');row.append(el('td','',entry.ordinal));
   cols.forEach(c=>{
-   const value=siteValue(c,entry.site,p),cell=el('td','',value);
+   const value=valueOf(entry,c),display=parking?(c.startsWith('駐廠頻率')?String(value):fmt(c,value)):value,cell=el('td','',display);
    if(conf.name==='台積電'&&isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
    row.append(cell);
   });
@@ -572,7 +637,7 @@ function breadcrumb(){
  };
  add('通路總計',0);
  state.path.forEach((name,i)=>{nav.append(el('span','np-crumb-divider','›'));add(name,i+1)});
- if(state.detail)nav.append(el('span','np-crumb-divider','›'),el('span','np-crumb-current',state.detail.confName+' '+state.detail.depth+'.5 據點明細'));
+ if(state.detail)nav.append(el('span','np-crumb-divider','›'),el('span','np-crumb-current',state.detail.confName+' '+state.detail.depth+'.5 '+(state.detail.confName==='駐廠職域'?'職域明細':'據點明細')));
 }
 
 function render(){
