@@ -696,94 +696,60 @@ function parkingRows(members,conf,p){
  }
  return rows;
 }
-// Each site is represented once; the existing detail rows retain person assignments.
-function parkingSummaryRows(assignments){
+// Site-level view: each real site is listed once, with its allocated totals.
+function parkingSiteRows(assignments){
  const sites=new Map();
  for(const entry of assignments){
   const id=entry.site.id;
-  if(!sites.has(id))sites.set(id,{site:entry.site,ordinal:sites.size+1,assignments:[],values:{...entry.values}});
-  sites.get(id).assignments.push(entry);
+  if(!sites.has(id))sites.set(id,{site:entry.site,ordinal:sites.size+1,values:{...entry.values},attendanceTotal:0,assignments:0});
+  const site=sites.get(id);
+  site.attendanceTotal+=Number(entry.values['出勤率'])||0;
+  site.assignments++;
  }
- for(const entry of sites.values()){
-  const rows=entry.assignments,people=new Set(),offices=new Set();
-  let frequency=0,irregular=0;
-  for(const row of rows){
-   const member=row.member;
-   people.add(JSON.stringify(member.path));
-   offices.add(JSON.stringify(member.path.slice(0,3)));
-   const f=row.values['駐廠頻率(1周駐廠次數)'];
-   if(typeof f==='number')frequency+=f;else irregular++;
-  }
-  Object.assign(entry.values,{
-   '駐廠通訊處數':offices.size,'駐廠人數':people.size,
-   '駐廠頻率(1周駐廠次數)':irregular?(frequency?frequency+' + 不定期':'不定期'):frequency
-  });
- }
- return [...sites.values()];
-}
-function returnToParkingSummary(){
- const data=state.detail;
- delete data.siteId;delete data.siteLabel;
- const previous=data.summaryTable;
- delete data.summaryTable;
- resetTable();
- if(previous)Object.assign(state,previous);
- render();
-}
-function openParkingPersonDetail(entry){
- const data=state.detail;
- data.summaryTable={sort:state.sort,filters:state.filters,page:state.page};
- data.siteId=entry.site.id;
- data.siteLabel=entry.values['駐廠職域名稱'];
- resetTable();render();
- $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
+ return [...sites.values()].map(site=>({
+  site:site.site,ordinal:site.ordinal,
+  values:{...site.values,'出勤率':site.assignments?site.attendanceTotal/site.assignments:0}
+ }));
 }
 function detailSection(conf,p){
- const data=state.detail,allSites=memberSites(data.members);
+ const data=state.detail,parking=conf.name==='駐廠職域';
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
  const fallback=conf.name==='台積電'
   ?['據點名稱','職域代碼','經營人員數','FYC','今年個險保單數','據點地址']
   :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
- const parking=conf.name==='駐廠職域';
- const summary=parking&&data.siteId===undefined;
- const cols=parking?(summary?parkingSummaryColumns:parkingColumns).filter(c=>state.mode==='year'||!c.includes('成長率')):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
+ const cols=parking?[...parkingSiteColumns].filter(c=>state.mode==='year'||!c.includes('成長率')):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
- const assignments=parking?parkingRows(data.members,conf,p):[];
- const allRows=summary?parkingSummaryRows(assignments):parking?assignments.filter(entry=>entry.site.id===data.siteId).map((entry,i)=>({...entry,ordinal:i+1})):allSites.map((site,i)=>({site,ordinal:i+1}));
+ const orderedCols=codeLast(cols);
+ const allRows=parking?parkingSiteRows(parkingRows(data.members,conf,p)):memberSites(data.members).map((site,i)=>({site,ordinal:i+1}));
  const valueOf=(entry,col)=>col==='序號'?entry.ordinal:parking?entry.values[col]:siteValue(col,entry.site,p);
- const displayOf=(entry,col)=>{const value=valueOf(entry,col);return col==='序號'?value:parking?(col.startsWith('駐廠頻率')?String(value):fmt(col,value)):value};
+ const displayOf=(entry,col)=>{const v=valueOf(entry,col);return col==='序號'?v:parking?fmt(col,v):v};
  const rows=orderedRows(allRows,valueOf,displayOf);
- const count=rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+(summary?' 個職域':parking?' 筆駐廠分派':' 筆據點');
- $('npBreadcrumb').append(el('span','np-crumb-count','（'+count+'）'));
- sec.setAttribute('aria-label',conf.name+(summary?'職域統計':parking?'駐廠人員明細':'據點明細'));
+ $('npBreadcrumb').append(el('span','np-crumb-count','（'+rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+' 筆據點）'));
+ sec.setAttribute('aria-label',conf.name+'據點明細');
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- if(!summary)headerCell(tr,'序號',allRows,valueOf,displayOf);
- cols.forEach(x=>headerCell(tr,x,allRows,valueOf,displayOf));
+ headerCell(tr,'序號',allRows,valueOf,displayOf);
+ orderedCols.forEach(col=>headerCell(tr,col,allRows,valueOf,displayOf));
  thead.append(tr);table.append(thead);
  const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(rows.length/pageSize)-1);
  state.page=Math.min(state.page,lastPage);
- rows.slice(state.page*pageSize,(state.page+1)*pageSize).forEach(entry=>{
-  const row=el('tr');if(!summary)row.append(el('td','',entry.ordinal));
-  cols.forEach(c=>{
-   const value=valueOf(entry,c),cell=el('td','',displayOf(entry,c));
-   if(summary&&c==='駐廠人數'){
-    const btn=el('button','np-number-link',displayOf(entry,c));btn.type='button';btn.title='查看 '+entry.values['駐廠職域名稱']+' 駐廠人員明細';btn.onclick=()=>openParkingPersonDetail(entry);cell.replaceChildren(btn);
-   }
-   if(isMetricDanger(conf,c,value))cell.classList.add('np-cell-danger');
+ for(const entry of rows.slice(state.page*pageSize,(state.page+1)*pageSize)){
+  const row=el('tr');row.append(el('td','',entry.ordinal));
+  for(const col of orderedCols){
+   const value=valueOf(entry,col),cell=el('td','',displayOf(entry,col));
+   appendCode(cell,col,value);
+   if(isMetricDanger(conf,col,value))cell.classList.add('np-cell-danger');
    row.append(cell);
-  });
+  }
   tb.append(row);
- });
+ }
  if(!rows.length){
-  const empty=el('tr'),cell=el('td','np-empty','沒有符合條件的職域');
-  cell.colSpan=cols.length+(summary?0:1);empty.append(cell);tb.append(empty);
+  const row=el('tr'),cell=el('td','np-empty','沒有符合條件的據點');
+  cell.colSpan=orderedCols.length+1;row.append(cell);tb.append(row);
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
- if(summary)sec.append(el('p','np-footnote','職域業績依現有分攤口徑；駐廠頻率為固定分派每週次數加總，不定期另列。理賠件數及理賠後購買個險FYN等缺乏原始來源的指標採固定模擬值。'));
  if(lastPage){
-  const bar=el('div','np-pager');
-  const prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');
+  const bar=el('div','np-pager'),prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');
   prev.type='button';next.type='button';prev.disabled=state.page===0;next.disabled=state.page===lastPage;
   prev.onclick=()=>{state.page--;render()};next.onclick=()=>{state.page++;render()};
   bar.append(prev,el('span','','第 '+(state.page+1)+' / '+(lastPage+1)+' 頁（共 '+rows.length+' 筆）'),next);sec.append(bar);
