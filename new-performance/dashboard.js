@@ -188,7 +188,7 @@ function aggregate(members,conf,p){
  let fyc=0,fyn=0,fyp=0,oldFyc=0,priorHasData=false;
  let doctorFyc=0,nurseFyc=0,physicianPolicies=0,nursePolicies=0,medicalPolicies=0;
  let newCustomers=0,insured=0,groupClients=0,renewed=0,claims=0,appointments=0,unreplied=0;
- let activePeople=0,qualifiedPeople=0;
+ let activePeople=0,groupActivePeople=0,qualifiedPeople=0;
  for(const person of activeMembers){
   const key=periodKey+'|'+JSON.stringify(person.path);
   let personFyc=0,personFyn=0,personFyp=0;
@@ -222,6 +222,9 @@ function aggregate(members,conf,p){
   const appts=estimate(key+'|appointments',3,14)*units;
   appointments+=appts;unreplied+=Math.min(appts,estimate(key+'|unreplied',0,2)*units);
   if(p.unsupported ? estimate(key+'|active',1,100)>14 : personFyn>0)activePeople++;
+  // Independent demo activity flags at person/period grain; aggregate by people, not by rates.
+  const groupThreshold=p.unsupported?(p.factor<0.1?15:35):Math.min(95,45+Math.max(1,p.months.length)*4);
+  if(estimate(key+'|group-active',1,100)<=groupThreshold)groupActivePeople++;
   if(estimate(conf.name+'|'+JSON.stringify(person.path)+'|qualified',1,100)>29)qualifiedPeople++;
  }
  // Existing source does not provide site evaluation or group policy KPIs.
@@ -246,7 +249,7 @@ function aggregate(members,conf,p){
    :estimate(periodKey+'|no-prior-yoy|'+members.map(x=>x.path.join('|')).sort().join(','),-80,180)/10;
  return {
   sites:siteCount,offices,people,fyc,fyn:Math.round(fyn*100)/100,fyp,
-  doctorFyc,nurseFyc,yoy,activePeople,activity:rate(activePeople,people),
+  doctorFyc,nurseFyc,yoy,activePeople,activity:rate(activePeople,people),groupActivePeople,groupActivity:rate(groupActivePeople,people),
   qualifiedPeople,qualifiedRate:rate(qualifiedPeople,people),
   reviewed,met,siteRate:rate(met,reviewed),
   insured,groupClients,renewed,newCustomers,clientsWithGroup,siteDevelopRate:rate(clientsWithGroup,siteCount),
@@ -267,8 +270,7 @@ function metric(name,d){
   'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,
   'FYC同期成長率':d.yoy,'去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
   '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
-  // No source field reliably identifies group-insurance activity; do not invent a rate.
-  '團險實動率':null,
+  '團險實動率':d.groupActivity,
   '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
   '應檢視據點數':d.reviewed,'達標據點數':d.met,'未達標據點數':Math.max(0,d.reviewed-d.met),'據點達標率':d.siteRate,
   '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
@@ -478,6 +480,10 @@ document.addEventListener('scroll',e=>{if(activeFilterPopover&&!activeFilterPopo
 // A shared temporary definition tooltip, placed outside the scrollable table.
 let definitionTip=null,definitionTrigger=null,definitionPinned=false;
 const metricDefinitions=Object.create(null);
+metricDefinitions['團險實動率']='模擬資料：選定期間團險實動人數 ÷ 經營人員數 × 100%。依人員及統計期間固定模擬，非實際團險業績。';
+metricDefinitions['理賠後購買個險FYN']='模擬資料：理賠後購買個險之FYN，依職域及統計期間固定模擬。';
+metricDefinitions['FYC成長率']='與去年同期FYC比較；若無可用比較基期，採固定模擬成長率。';
+metricDefinitions['三天內回覆預約率']='三天內回覆數 ÷ 已回覆預約數 × 100%；無已回覆預約時以0%顯示。';
 function closeDefinition(){
  if(definitionTip)definitionTip.remove();
  if(definitionTrigger)definitionTrigger.removeAttribute('aria-describedby');
@@ -648,11 +654,11 @@ function parkingRows(members,conf,p){
     '駐廠人員':a.member.path[3],'駐廠人員通訊處':a.member.path[2],
     '駐廠頻率(1周駐廠次數)':a.frequency===6?'不定期':a.frequency,
     '駐廠時數(一周駐廠時數)':hours,
-    'FYC':Math.round(info.fyc*100)/100,'FYC成長率':info.prior!==0?(info.fyc-info.prior)/Math.abs(info.prior)*100:null,
+    'FYC':Math.round(info.fyc*100)/100,'FYC成長率':info.prior!==0?(info.fyc-info.prior)/Math.abs(info.prior)*100:estimate(key+'|'+p.label+'|no-prior-yoy',-80,180)/10,
     'FYN':Math.round(info.fyn*100)/100,'FYP':Math.round(info.fyp*100)/100,
-    '理賠件數':info.claims,'員工人數':employees,'LINE OA加入人數':joined,
+    '理賠件數':info.claims,'理賠後購買個險FYN':Math.round(info.claims*estimate(key+'|'+p.label+'|claims-conversion',10,60)/100),'員工人數':employees,'LINE OA加入人數':joined,
     'LINE OA預約數':info.appointments,'LINE OA 未回覆預約數':info.unreplied,
-    '三天內回覆預約率':completed?info.timely/completed*100:null,'出勤率':a.attendance
+    '三天內回覆預約率':completed?info.timely/completed*100:0,'出勤率':a.attendance
    }});
   }
  }
@@ -678,8 +684,7 @@ function parkingSummaryRows(assignments){
   }
   Object.assign(entry.values,{
    '駐廠通訊處數':offices.size,'駐廠人數':people.size,
-   '駐廠頻率(1周駐廠次數)':irregular?(frequency?frequency+' + 不定期':'不定期'):frequency,
-   '理賠後購買個險FYN':null
+   '駐廠頻率(1周駐廠次數)':irregular?(frequency?frequency+' + 不定期':'不定期'):frequency
   });
  }
  return [...sites.values()];
@@ -743,7 +748,7 @@ function detailSection(conf,p){
   cell.colSpan=cols.length+(summary?0:1);empty.append(cell);tb.append(empty);
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
- if(summary)sec.append(el('p','np-footnote','職域業績依現有分攤口徑；駐廠頻率為固定分派每週次數加總，不定期另列。理賠件數等未提供原始資料之指標為示範值；理賠後購買個險FYN尚無來源，以「—」表示。'));
+ if(summary)sec.append(el('p','np-footnote','職域業績依現有分攤口徑；駐廠頻率為固定分派每週次數加總，不定期另列。理賠件數及理賠後購買個險FYN等缺乏原始來源的指標採固定模擬值。'));
  if(lastPage){
   const bar=el('div','np-pager');
   const prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');

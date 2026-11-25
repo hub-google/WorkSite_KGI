@@ -401,7 +401,7 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
    <div class="np-period-box">
     <label id="npMonthBox" for="npMonth">選擇月份 <input id="npMonth" type="text" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="YYYYMM" aria-label="月份 YYYYMM"></label>
     <label id="npYearBox" for="npYear" hidden>選擇年度 <select id="npYear"><option value="2026">2026</option><option value="2025">2025</option></select></label>
-    <span class="np-date-caption" id="npRange" aria-live="polite">讀取月份中…</span>
+    <span class="np-date-caption" id="npRange" aria-live="polite">讀取月份中…</span><span class="np-date-caption" title="缺少原始來源的指標採固定模擬數據，非實際業績。">含模擬數據</span>
    </div>
   </div>
   <label class="np-domain-picker" for="npDomainSelect">
@@ -1400,4 +1400,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261125-medical-home-metrics"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261125-complete-demo-metrics"></script></body></html>
