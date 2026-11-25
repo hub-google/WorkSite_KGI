@@ -32,7 +32,7 @@ const C=[
 ];
 
 const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
-const parkingSummaryColumns=['駐廠職域名稱','職域代碼','員工人數','駐廠通訊處數','駐廠人數','駐廠頻率(1周駐廠次數)','FYC','FYN','FYP','理賠件數','理賠後購買個險FYN'];
+const parkingSummaryColumns=['駐廠職域名稱','職域代碼','員工人數','駐廠通訊處數','駐廠人數','駐廠頻率(1周駐廠次數)','FYC','FYC累月成長率','FYN','FYP','理賠件數','理賠後購買個險FYN'];
 const root=document.getElementById('newPerformance');
 if(!root)return;
 const el=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
@@ -719,7 +719,7 @@ function detailSection(conf,p){
   :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
  const parking=conf.name==='駐廠職域';
  const summary=parking&&data.siteId===undefined;
- const cols=summary?parkingSummaryColumns.slice():parking?parkingColumns.filter(c=>state.mode==='year'||!c.includes('成長率')):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
+ const cols=parking?(summary?parkingSummaryColumns:parkingColumns).filter(c=>state.mode==='year'||!c.includes('成長率')):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
  const assignments=parking?parkingRows(data.members,conf,p):[];
