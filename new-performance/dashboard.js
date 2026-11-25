@@ -823,12 +823,7 @@ function breadcrumb(){
  const scope=prefix&&data.pathLabel.startsWith(prefix)?data.pathLabel.slice(prefix.length):data.pathLabel;
  if(scope!=='通路總計'&&scope!==state.path.at(-1)){divider();current(scope)}
  divider();
- if(data.confName==='駐廠職域'){
-  if(data.siteId!==undefined){
-   const summary=el('button','np-crumb','職域統計');summary.type='button';summary.onclick=returnToParkingSummary;
-   nav.append(summary);divider();current(data.siteLabel+' 人員明細');
-  }else current('職域統計');
- }else current('據點明細');
+ current('據點明細');
 }
 
 function render(){
@@ -856,7 +851,7 @@ function render(){
  if(p.unsupported){msg.textContent='業績來源只有工作月份；昨天與上週的績效採用示範數值，組織及據點仍採真實名冊。';msg.hidden=false;}
  else if(state.mode==='month'&&state.month>latestActualMonth){msg.textContent='目前業績來源截至 '+latestActualMonth+'，所選月份尚無業績資料；據點名冊為現況。';msg.hidden=false;}
  const config=C.find(x=>x.name===state.domain)||C[0];
- sections.append(section(config,p));
+ sections.append(state.detail?detailSection(config,p):section(config,p));
 }
 
 function init(){
