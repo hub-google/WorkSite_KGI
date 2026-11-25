@@ -31,7 +31,7 @@ const C=[
   4:['駐廠職域名稱','職域代碼','駐廠職域數','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
 ];
 
-const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
+const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
 const parkingSummaryColumns=['駐廠職域名稱','職域代碼','員工人數','駐廠通訊處數','駐廠人數','駐廠頻率(1周駐廠次數)','FYC','FYN','FYP','理賠件數','理賠後購買個險FYN'];
 const root=document.getElementById('newPerformance');
 if(!root)return;
@@ -482,7 +482,7 @@ let definitionTip=null,definitionTrigger=null,definitionPinned=false;
 const metricDefinitions=Object.create(null);
 metricDefinitions['團險實動率']='模擬資料：選定期間團險實動人數 ÷ 經營人員數 × 100%。依人員及統計期間固定模擬，非實際團險業績。';
 metricDefinitions['理賠後購買個險FYN']='模擬資料：理賠後購買個險之FYN，依職域及統計期間固定模擬。';
-metricDefinitions['FYC成長率']='與去年同期FYC比較；若無可用比較基期，採固定模擬成長率。';
+metricDefinitions['FYC累月成長率']='選定年度累月FYC與去年相同月份累計FYC比較；若無可用比較基期，採固定模擬成長率。';
 metricDefinitions['三天內回覆預約率']='三天內回覆數 ÷ 已回覆預約數 × 100%；無已回覆預約時以0%顯示。';
 function closeDefinition(){
  if(definitionTip)definitionTip.remove();
@@ -659,7 +659,7 @@ function parkingRows(members,conf,p){
     '駐廠人員':a.member.path[3],'駐廠人員通訊處':a.member.path[2],
     '駐廠頻率(1周駐廠次數)':a.frequency===6?'不定期':a.frequency,
     '駐廠時數(一周駐廠時數)':hours,
-    'FYC':Math.round(info.fyc*100)/100,'FYC成長率':info.prior!==0?(info.fyc-info.prior)/Math.abs(info.prior)*100:estimate(key+'|'+p.label+'|no-prior-yoy',-80,180)/10,
+    'FYC':Math.round(info.fyc*100)/100,'FYC累月成長率':info.prior!==0?(info.fyc-info.prior)/Math.abs(info.prior)*100:estimate(key+'|'+p.label+'|no-prior-yoy',-80,180)/10,
     'FYN':Math.round(info.fyn*100)/100,'FYP':Math.round(info.fyp*100)/100,
     '理賠件數':info.claims,'理賠後購買個險FYN':Math.round(info.claims*estimate(key+'|'+p.label+'|claims-conversion',10,60)/100),'員工人數':employees,'LINE OA加入人數':joined,
     'LINE OA預約數':info.appointments,'LINE OA 未回覆預約數':info.unreplied,
@@ -719,7 +719,7 @@ function detailSection(conf,p){
   :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
  const parking=conf.name==='駐廠職域';
  const summary=parking&&data.siteId===undefined;
- const cols=summary?parkingSummaryColumns.slice():parking?parkingColumns.filter(c=>state.mode==='year'||c!=='FYC成長率'):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
+ const cols=summary?parkingSummaryColumns.slice():parking?parkingColumns.filter(c=>state.mode==='year'||!c.includes('成長率')):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
  const assignments=parking?parkingRows(data.members,conf,p):[];
