@@ -370,6 +370,12 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 .np-filter-actions{margin-top:12px}
 @media(max-width:650px){.np-filter-popover{padding:12px}.np-excel-option{min-height:40px}.np-excel-list{max-height:min(220px,28dvh)}.np-filter-actions button{padding:9px 10px}}
 
+#newPerformance .np-code-cell{white-space:nowrap;font-variant-numeric:tabular-nums}
+#newPerformance .np-code-value{user-select:all}
+#newPerformance .np-code-copy{border:1px solid #bed5e7;background:#f2f8fc;border-radius:6px;color:#23648b;font:inherit;font-size:12px;font-weight:750;cursor:pointer;padding:3px 7px;margin-left:8px;white-space:nowrap}
+#newPerformance .np-code-copy:hover{background:#dbeef9}
+#newPerformance .np-code-copy:focus-visible{outline:2px solid #2780b4;outline-offset:2px}
+
 #newPerformance .np-table .np-cell-danger,
 #newPerformance .np-table .np-cell-danger .np-number-link{color:#bf1f28!important;font-weight:850}
 #newPerformance .np-table .np-grand-total .np-cell-danger,
@@ -1400,4 +1406,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261125-complete-demo-metrics"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261125-site-detail-copy-kpi"></script></body></html>
