@@ -13,7 +13,7 @@ const C=[
  levels:{
   1:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','團險實動率','據點團單開發率'],
   2:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','團險實動率','據點團單開發率'],
-  3:['總據點數','經營人數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','未達標經營人數','人員達標率','經營據點數','未達標經營據點數'],
+  3:['總據點數','經營人數','個險實動人數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','未達標經營人數','人員達標率','經營據點數','未達標經營據點數'],
   4:['總據點數','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','三天內回覆率','個人是否達標']},
  sites3:['據點名稱','據點代碼','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','經營人數','據點地址','據點人數'],
  sites4:['據點名稱','據點代碼','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','據點地址','據點人數']},
@@ -31,8 +31,7 @@ const C=[
   4:['駐廠職域名稱','職域代碼','駐廠職域數','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率']}}
 ];
 
-const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
-const parkingSummaryColumns=['駐廠職域名稱','職域代碼','員工人數','駐廠通訊處數','駐廠人數','駐廠頻率(1周駐廠次數)','FYC','FYN','FYP','理賠件數','理賠後購買個險FYN'];
+const parkingSiteColumns=['駐廠職域名稱','FYC','FYC累月成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率','職域代碼'];
 const root=document.getElementById('newPerformance');
 if(!root)return;
 const el=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
@@ -297,23 +296,25 @@ function metric(name,d){
 function fmt(name,v){
  if(v===null||v===undefined||v==='')return '—';
  if(typeof v==='string')return v;
- if(name.includes('率'))return (name.includes('成長')&&v>0?'+':'')+v.toFixed(1)+'%';
- if(name.includes('FYC')||name==='FYP'||name==='FYN'||name.includes('差額')){
-  if(Math.abs(v)>=1e8)return (v/1e8).toFixed(2)+'億';
-  if(Math.abs(v)>=1e4)return (v/1e4).toFixed(1)+'萬';
- }
- return v.toLocaleString('zh-TW',{maximumFractionDigits:1});
+ if(name.includes('率'))return v.toLocaleString('zh-TW',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+ return v.toLocaleString('zh-TW',{maximumFractionDigits:2});
 }
-
+function codeLast(cols){
+ return cols.includes('職域代碼')?[...cols.filter(col=>col!=='職域代碼'),'職域代碼']:cols;
+}
 function visibleColumns(conf,depth){
- return conf.levels[depth].filter(col=>state.mode==='year'||(!col.includes('同期成長率')&&!(conf.name==='駐廠職域'&&col.includes('成長率'))&&!(conf.name==='闔家安康'&&col==='FYC累月成長率'))).map(col=>{
+ const cols=conf.levels[depth].filter(col=>state.mode==='year'||(!col.includes('同期成長率')&&!(conf.name==='駐廠職域'&&col.includes('成長率'))&&!(conf.name==='闔家安康'&&col==='FYC累月成長率'))).map(col=>{
   if(conf.name!=='台積電'||state.mode==='year')return col;
   const period=state.mode==='month'?'當月':state.mode==='lastweek'?'上週':'昨日';
   return col==='FYC累月差額'?'FYC'+period+'差額':
    col==='新客戶數累月差額'?'新客戶數'+period+'差額':col;
  });
+ return codeLast(cols);
 }
-function resetTable(){state.sort={col:null,dir:1};state.filters={};state.page=0}
+function resetTable(){
+ state.sort=state.domain==='駐廠職域'?{col:'FYC',dir:-1}:{col:null,dir:1};
+ state.filters={};state.page=0;
+}
 function normalizedValue(value){
  if(typeof value==='number')return value;
  const raw=String(value??'').replace(/,/g,'').trim();
