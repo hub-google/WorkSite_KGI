@@ -11,8 +11,8 @@ const C=[
  sites4:['據點名稱','職域代碼','經營人員數','FYC','團險主被保險人數','團險客戶數(含眷屬)','新加保主被保險人數','今年個險保單數','據點評核達標現況(1=達標、0=尚未達標)','據點地址']},
  {name:'醫護職域',domains:['醫護公會','醫護職域'],color:'#13a092',desc:'醫師與護理師公會、醫保永逸團單',
  levels:{
-  1:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','據點團單開發率'],
-  2:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','據點團單開發率'],
+  1:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','團險實動率','據點團單開發率'],
+  2:['總據點數','經營人員數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','個險實動率','團險實動率','據點團單開發率'],
   3:['總據點數','經營人數','醫師公會FYC','護理師公會FYC','FYC同期成長率','醫師公會團單數','護理師公會團單數','醫保永逸團單數','未達標經營人數','人員達標率','經營據點數','未達標經營據點數'],
   4:['總據點數','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','三天內回覆率','個人是否達標']},
  sites3:['據點名稱','據點代碼','醫師公會FYC','護理師公會FYC','醫師公會團單數','護理師公會團單數','醫保永逸團單數','經營人數','據點地址','據點人數'],
@@ -267,6 +267,8 @@ function metric(name,d){
   'FYC累月成長率':d.yoy,'醫護職域FYC累月成長率':d.yoy,
   'FYC同期成長率':d.yoy,'去年同期FYC成長率':d.yoy,'FYC成長率':d.yoy,
   '個險實動人數':d.activePeople,'個險實動率':d.activity,'經營人員實動率':d.activity,
+  // No source field reliably identifies group-insurance activity; do not invent a rate.
+  '團險實動率':null,
   '經營人員達標率':d.qualifiedRate,'經營人員達考核標準人數':d.qualifiedPeople,
   '應檢視據點數':d.reviewed,'達標據點數':d.met,'未達標據點數':Math.max(0,d.reviewed-d.met),'據點達標率':d.siteRate,
   '團險主被保險人數':d.insured,'團險客戶數(含眷屬)':d.groupClients,
@@ -302,7 +304,7 @@ function fmt(name,v){
 }
 
 function visibleColumns(conf,depth){
- return conf.levels[depth].filter(col=>state.mode==='year'||(!col.includes('同期成長率')&&!(conf.name==='駐廠職域'&&col.includes('成長率')))).map(col=>{
+ return conf.levels[depth].filter(col=>state.mode==='year'||(!col.includes('同期成長率')&&!(conf.name==='駐廠職域'&&col.includes('成長率'))&&!(conf.name==='闔家安康'&&col==='FYC累月成長率'))).map(col=>{
   if(conf.name!=='台積電'||state.mode==='year')return col;
   const period=state.mode==='month'?'當月':state.mode==='lastweek'?'上週':'昨日';
   return col==='FYC累月差額'?'FYC'+period+'差額':
