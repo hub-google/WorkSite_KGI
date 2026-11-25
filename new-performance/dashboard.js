@@ -32,6 +32,7 @@ const C=[
 ];
 
 const parkingColumns=['駐廠職域名稱','職域代碼','駐廠人員','駐廠人員通訊處','駐廠頻率(1周駐廠次數)','駐廠時數(一周駐廠時數)','FYC','FYC成長率','FYN','FYP','理賠件數','員工人數','LINE OA加入人數','LINE OA預約數','LINE OA 未回覆預約數','三天內回覆預約率','出勤率'];
+const parkingSummaryColumns=['駐廠職域名稱','職域代碼','員工人數','駐廠通訊處數','駐廠人數','駐廠頻率(1周駐廠次數)','FYC','FYN','FYP','理賠件數','理賠後購買個險FYN'];
 const root=document.getElementById('newPerformance');
 if(!root)return;
 const el=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
@@ -640,7 +641,7 @@ function parkingRows(members,conf,p){
   for(const a of info.assignments){
    const personKey='parking|'+JSON.stringify(a.member.path)+'|'+info.site.id;
    const hours=a.frequency===6?estimate(personKey+'|irregular-hours',1,8):a.frequency*estimate(personKey+'|hours-per-visit',2,6);
-   rows.push({site:info.site,ordinal:rows.length+1,values:{
+   rows.push({site:info.site,member:a.member,ordinal:rows.length+1,values:{
     '駐廠職域名稱':name||'未提供名稱','職域代碼':code||'未提供代碼',
     '駐廠人員':a.member.path[3],'駐廠人員通訊處':a.member.path[2],
     '駐廠頻率(1周駐廠次數)':a.frequency===6?'不定期':a.frequency,
@@ -655,6 +656,49 @@ function parkingRows(members,conf,p){
  }
  return rows;
 }
+// Each site is represented once; the existing detail rows retain person assignments.
+function parkingSummaryRows(assignments){
+ const sites=new Map();
+ for(const entry of assignments){
+  const id=entry.site.id;
+  if(!sites.has(id))sites.set(id,{site:entry.site,ordinal:sites.size+1,assignments:[],values:{...entry.values}});
+  sites.get(id).assignments.push(entry);
+ }
+ for(const entry of sites.values()){
+  const rows=entry.assignments,people=new Set(),offices=new Set();
+  let frequency=0,irregular=0;
+  for(const row of rows){
+   const member=row.member;
+   people.add(JSON.stringify(member.path));
+   offices.add(JSON.stringify(member.path.slice(0,3)));
+   const f=row.values['駐廠頻率(1周駐廠次數)'];
+   if(typeof f==='number')frequency+=f;else irregular++;
+  }
+  Object.assign(entry.values,{
+   '駐廠通訊處數':offices.size,'駐廠人數':people.size,
+   '駐廠頻率(1周駐廠次數)':irregular?(frequency?frequency+' + 不定期':'不定期'):frequency,
+   '理賠後購買個險FYN':null
+  });
+ }
+ return [...sites.values()];
+}
+function returnToParkingSummary(){
+ const data=state.detail;
+ delete data.siteId;delete data.siteLabel;
+ const previous=data.summaryTable;
+ delete data.summaryTable;
+ resetTable();
+ if(previous)Object.assign(state,previous);
+ render();
+}
+function openParkingPersonDetail(entry){
+ const data=state.detail;
+ data.summaryTable={sort:state.sort,filters:state.filters,page:state.page};
+ data.siteId=entry.site.id;
+ data.siteLabel=entry.values['駐廠職域名稱'];
+ resetTable();render();
+ $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
+}
 function detailSection(conf,p){
  const data=state.detail,allSites=memberSites(data.members);
  const sec=el('section','np-domain');sec.style.setProperty('--np-accent',conf.color);
@@ -663,27 +707,33 @@ function detailSection(conf,p){
   ?['據點名稱','職域代碼','經營人員數','FYC','今年個險保單數','據點地址']
   :['據點名稱','職域代碼','經營人員數','FYC','FYN','FYP','理賠件數','據點地址'];
  const parking=conf.name==='駐廠職域';
- const cols=parking?parkingColumns.filter(c=>state.mode==='year'||c!=='FYC成長率'):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
+ const summary=parking&&data.siteId===undefined;
+ const cols=summary?parkingSummaryColumns.slice():parking?parkingColumns.filter(c=>state.mode==='year'||c!=='FYC成長率'):[...(data.depth===4?(conf.sites4||fallback):(conf.sites3||fallback))];
  const addressIndex=cols.indexOf('據點地址');
  if(addressIndex>=0)cols.splice(addressIndex,0,'職域分級','郵遞區號','職域人數','其他人員數');
- const allRows=parking?parkingRows(data.members,conf,p):allSites.map((site,i)=>({site,ordinal:i+1}));
+ const assignments=parking?parkingRows(data.members,conf,p):[];
+ const allRows=summary?parkingSummaryRows(assignments):parking?assignments.filter(entry=>entry.site.id===data.siteId).map((entry,i)=>({...entry,ordinal:i+1})):allSites.map((site,i)=>({site,ordinal:i+1}));
  const valueOf=(entry,col)=>col==='序號'?entry.ordinal:parking?entry.values[col]:siteValue(col,entry.site,p);
  const displayOf=(entry,col)=>{const value=valueOf(entry,col);return col==='序號'?value:parking?(col.startsWith('駐廠頻率')?String(value):fmt(col,value)):value};
  const rows=orderedRows(allRows,valueOf,displayOf);
- heading.append(el('h2','',conf.name+'｜第 '+data.depth+' 層職域統計'),
-  el('p','',data.pathLabel+' · '+rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+(parking?' 筆駐廠分派':' 筆據點')));
- const back=el('button','np-plain','← 返回第 '+data.depth+' 層');
- back.type='button';back.onclick=()=>{state.detail=null;resetTable();render()};
+ heading.append(el('h2','',conf.name+'｜'+(summary?'職域統計':parking?'第 '+data.depth+'.5 層駐廠人員明細':'第 '+data.depth+' 層職域統計')),
+  el('p','',data.pathLabel+(parking&&!summary?' / '+data.siteLabel:'')+' · '+rows.length+(rows.length!==allRows.length?' / '+allRows.length:'')+(summary?' 個職域':parking?' 筆駐廠分派':' 筆據點')));
+ const back=el('button','np-plain',parking&&!summary?'← 返回職域統計':'← 返回第 '+data.depth+' 層');
+ back.type='button';back.onclick=()=>{if(parking&&!summary){returnToParkingSummary();return}state.detail=null;resetTable();render()};
  head.append(heading,back);sec.append(head);
  const wrap=el('div','np-table-wrap'),table=el('table','np-table'),thead=el('thead'),tr=el('tr');
- headerCell(tr,'序號',allRows,valueOf,displayOf);cols.forEach(x=>headerCell(tr,x,allRows,valueOf,displayOf));
+ if(!summary)headerCell(tr,'序號',allRows,valueOf,displayOf);
+ cols.forEach(x=>headerCell(tr,x,allRows,valueOf,displayOf));
  thead.append(tr);table.append(thead);
  const tb=el('tbody'),pageSize=35,lastPage=Math.max(0,Math.ceil(rows.length/pageSize)-1);
  state.page=Math.min(state.page,lastPage);
  rows.slice(state.page*pageSize,(state.page+1)*pageSize).forEach(entry=>{
-  const row=el('tr');row.append(el('td','',entry.ordinal));
+  const row=el('tr');if(!summary)row.append(el('td','',entry.ordinal));
   cols.forEach(c=>{
    const value=valueOf(entry,c),cell=el('td','',displayOf(entry,c));
+   if(summary&&c==='駐廠人數'){
+    const btn=el('button','np-number-link',displayOf(entry,c));btn.type='button';btn.title='查看 '+entry.values['駐廠職域名稱']+' 駐廠人員明細';btn.onclick=()=>openParkingPersonDetail(entry);cell.replaceChildren(btn);
+   }
    if(conf.name==='台積電'&&isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
    row.append(cell);
   });
@@ -691,9 +741,10 @@ function detailSection(conf,p){
  });
  if(!rows.length){
   const empty=el('tr'),cell=el('td','np-empty','沒有符合條件的職域');
-  cell.colSpan=cols.length+1;empty.append(cell);tb.append(empty);
+  cell.colSpan=cols.length+(summary?0:1);empty.append(cell);tb.append(empty);
  }
  table.append(tb);wrap.append(table);sec.append(wrap);
+ if(summary)sec.append(el('p','np-footnote','職域業績依現有分攤口徑；駐廠頻率為固定分派每週次數加總，不定期另列。理賠件數等未提供原始資料之指標為示範值；理賠後購買個險FYN尚無來源，以「—」表示。'));
  if(lastPage){
   const bar=el('div','np-pager');
   const prev=el('button','np-plain','上一頁'),next=el('button','np-plain','下一頁');
@@ -761,7 +812,16 @@ function breadcrumb(){
  };
  add('通路總計',0);
  state.path.forEach((name,i)=>{nav.append(el('span','np-crumb-divider','›'));add(name,i+1)});
- if(state.detail)nav.append(el('span','np-crumb-divider','›'),el('span','np-crumb-current',state.detail.confName+' '+state.detail.depth+'.5 '+(state.detail.confName==='駐廠職域'?'職域明細':'據點明細')));
+ if(state.detail){
+  const data=state.detail;
+  nav.append(el('span','np-crumb-divider','›'));
+  if(data.confName==='駐廠職域'){
+   if(data.siteId!==undefined){
+    const summary=el('button','np-crumb','駐廠職域統計');summary.type='button';summary.onclick=returnToParkingSummary;
+    nav.append(summary,el('span','np-crumb-divider','›'),el('span','np-crumb-current',data.siteLabel+' '+data.depth+'.5 人員明細'));
+   }else nav.append(el('span','np-crumb-current','駐廠職域統計'));
+  }else nav.append(el('span','np-crumb-current',data.confName+' '+data.depth+'.5 據點明細'));
+ }
 }
 
 function render(){

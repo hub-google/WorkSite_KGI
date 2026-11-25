@@ -259,7 +259,10 @@ if(location.pathname==='/WorkSite_KGI/'||location.pathname==='/WorkSite_KGI/inde
 .np-table-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
 .np-table-head strong{display:block;font-size:16px;color:#294964}
 .np-table-head small{display:block;color:#8a9bab;font-size:12px;margin-top:3px}
-.np-table-wrap{overflow:auto;border:1px solid #e0eaf2;border-radius:11px;max-width:100%}
+.pagehead[hidden]{display:none!important}
+.np-table-wrap{overflow:auto;border:1px solid #e0eaf2;border-radius:11px;max-width:100%;max-height:calc(100dvh - 150px);min-height:0;scrollbar-gutter:stable;overscroll-behavior:contain;isolation:isolate}
+@media(max-height:400px){.np-table-wrap{max-height:65vh}}
+.np-table tbody td:first-child{box-shadow:2px 0 3px #13273f12}
 .np-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;white-space:nowrap}
 .np-table th{position:sticky;top:0;background:#eaf3f9;color:#345b75;text-align:right;padding:13px 14px;border-bottom:1px solid #cfdfe9;font-weight:750;z-index:1}
 .np-table th:first-child,.np-table td:first-child{text-align:left;position:sticky;left:0;z-index:2;min-width:138px}
@@ -1326,6 +1329,7 @@ function showView(name){
  }
  byId('pagetitle').textContent=name;
  document.title=name+'｜職域經營平台';
+ document.querySelector('.pagehead').hidden=name==='新績效管理';
  document.querySelector('.pagehead .demo').hidden=name==='職域新增、調整、刪除回報';
  byId('performance').hidden=name!=='績效管理';
  byId('newPerformance').hidden=name!=='新績效管理';
@@ -1395,4 +1399,4 @@ function initReportForm(){
 }
 initReportForm();
 showView(routedView());
-</script><script src="new-performance/dashboard.js?v=20261124-excel-filter"></script></body></html>
+</script><script src="new-performance/dashboard.js?v=20261125-parking-summary"></script></body></html>
