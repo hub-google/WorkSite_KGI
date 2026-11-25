@@ -542,9 +542,7 @@ function headerCell(tr,col,entries,valueOf,displayOf){
 }
 
 function linkable(conf,name,depth){
- // Only the parking table requested site-count drilldown at every level.
- if(conf.name==='駐廠職域')return depth>=1&&depth<=4&&(name==='駐廠職域數'||(depth===4&&name==='駐廠職域名稱'));
- // Retain the existing drilldowns in the home/medical reports (levels 3 and 4).
+ if(conf.name==='駐廠職域')return depth>=1&&depth<=4&&name==='駐廠職域數';
  if(depth===3||depth===4)return (conf.name==='闔家安康'||conf.name==='醫護職域')&&name==='總據點數';
  return false;
 }
@@ -555,7 +553,35 @@ function isDanger(name,value){
 function isMetricDanger(conf,name,value){
  const numeric=normalizedValue(value);
  return (name.includes('成長率')&&typeof numeric==='number'&&Number.isFinite(numeric)&&numeric<0)||
+  ((name==='個人是否達標'||name==='年度經營人員標準是否達標')&&value==='未達標')||
   (conf.name==='台積電'&&isDanger(name,numeric));
+}
+async function copyCode(button,code,col){
+ try{
+  if(!navigator.clipboard?.writeText)throw new Error('Clipboard API unavailable');
+  await navigator.clipboard.writeText(code);
+  button.textContent='已複製';button.setAttribute('aria-label','已複製'+col+' '+code);
+ }catch(_err){
+  const input=el('textarea');input.value=code;
+  input.style.cssText='position:fixed;left:-9999px;top:0';
+  document.body.append(input);input.select();
+  let success=false;
+  try{success=!!document.execCommand('copy')}catch(_ignored){}
+  input.remove();
+  button.textContent=success?'已複製':'複製失敗';
+  button.setAttribute('aria-label',(success?'已複製':'複製失敗：')+col+' '+code);
+ }
+}
+function appendCode(cell,col,value){
+ if(col!=='職域代碼'&&col!=='據點代碼')return false;
+ const code=String(value??'').trim();
+ if(!code||code==='—'||code==='未提供代碼')return false;
+ cell.classList.add('np-code-cell');
+ const button=el('button','np-code-copy','複製');button.type='button';
+ button.title='複製'+col+' '+code;button.setAttribute('aria-label',button.title);
+ button.onclick=()=>copyCode(button,code,col);
+ cell.replaceChildren(el('span','np-code-value',code),button);
+ return true;
 }
 function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
  const cell=el('td'),value=metric(col,stats),display=fmt(col,value);
@@ -564,7 +590,7 @@ function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
   const btn=el('button','np-number-link',display);btn.type='button';
   btn.title='查看第 '+depth+' 層職域統計';
   btn.onclick=()=>openDetail(conf,members,depth,pathLabel);cell.append(btn);
- }else cell.textContent=display;
+ }else if(!appendCode(cell,col,value))cell.textContent=display;
  row.append(cell);
 }
 function openDetail(conf,members,depth,pathLabel){
