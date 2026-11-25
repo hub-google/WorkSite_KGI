@@ -551,9 +551,14 @@ function isDanger(name,value){
  return (typeof value==='number'&&(value<0||(/未達標/.test(name)&&value>0)))||
    (typeof value==='string'&&/未達標|尚未達標/.test(value));
 }
+function isMetricDanger(conf,name,value){
+ const numeric=normalizedValue(value);
+ return (name.includes('成長率')&&typeof numeric==='number'&&Number.isFinite(numeric)&&numeric<0)||
+  (conf.name==='台積電'&&isDanger(name,numeric));
+}
 function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
  const cell=el('td'),value=metric(col,stats),display=fmt(col,value);
- if(conf.name==='台積電'&&isDanger(col,value))cell.classList.add('np-cell-danger');
+ if(isMetricDanger(conf,col,value))cell.classList.add('np-cell-danger');
  if(linkable(conf,col,depth)){
   const btn=el('button','np-number-link',display);btn.type='button';
   btn.title='查看第 '+depth+' 層職域統計';
@@ -738,7 +743,7 @@ function detailSection(conf,p){
    if(summary&&c==='駐廠人數'){
     const btn=el('button','np-number-link',displayOf(entry,c));btn.type='button';btn.title='查看 '+entry.values['駐廠職域名稱']+' 駐廠人員明細';btn.onclick=()=>openParkingPersonDetail(entry);cell.replaceChildren(btn);
    }
-   if(conf.name==='台積電'&&isDanger(c,normalizedValue(value)))cell.classList.add('np-cell-danger');
+   if(isMetricDanger(conf,c,value))cell.classList.add('np-cell-danger');
    row.append(cell);
   });
   tb.append(row);
