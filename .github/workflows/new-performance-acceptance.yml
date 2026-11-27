@@ -1,0 +1,39 @@
+name: 新績效管理｜網頁驗收與截圖
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'new-performance/**'
+      - 'index.html'
+      - 'tests/new-performance-ui.mjs'
+      - '.github/workflows/new-performance-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    name: 四職域實機驗收
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 安裝瀏覽器測試環境
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: 驗收 GitHub Pages 四職域
+        run: node tests/new-performance-ui.mjs
+      - name: 保留畫面截圖與測試產物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-performance-ui-evidence
+          path: ui-evidence/
+          if-no-files-found: warn
+          retention-days: 7
