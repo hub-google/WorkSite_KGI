@@ -312,7 +312,7 @@ function visibleColumns(conf,depth){
  return codeLast(cols);
 }
 function resetTable(){
- state.sort=state.domain==='駐廠職域'?{col:'FYC',dir:-1}:{col:null,dir:1};
+ state.sort=state.detail?.confName==='駐廠職域'?{col:'FYC',dir:-1}:{col:null,dir:1};
  state.filters={};state.page=0;
 }
 function normalizedValue(value){
@@ -594,7 +594,7 @@ function appendMetricCell(row,conf,col,stats,members,depth,pathLabel){
  row.append(cell);
 }
 function openDetail(conf,members,depth,pathLabel){
- resetTable();state.detail={confName:conf.name,members,depth,pathLabel};render();
+ state.detail={confName:conf.name,members,depth,pathLabel};resetTable();render();
  $('npSections').scrollIntoView({block:'start',behavior:'smooth'});
 }
 

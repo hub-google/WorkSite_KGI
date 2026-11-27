@@ -53,20 +53,30 @@ try{
     assert.ok(red,'醫護未達標沒有紅字');
     await page.screenshot({path:'ui-evidence/02-medical-agent.png',fullPage:true});
   });
-  await check('駐廠預設 FYC 降冪、正成長不加號',async()=>{
+  await check('駐廠組織層維持原排序、正成長不加號',async()=>{
     await chooseDomain('駐廠職域');
-    assert.ok((await columns()).includes('FYC'));
-    const heads=await columns(),index=heads.indexOf('FYC')+1;
-    const v=(await page.locator('#npSections tbody tr:not(.np-grand-total) td:nth-child('+index+')').allTextContents()).map(t=>Number(t.replaceAll(',',''))).filter(Number.isFinite);
-    assert.ok(v.length>1,'不足兩筆 FYC 資料');
-    assert.deepEqual(v,[...v].sort((a,b)=>b-a),'FYC 未依降冪排列');
+    const names=await page.locator('#npSections tbody tr:not(.np-grand-total) td:first-child').allTextContents();
+    const original=['北一區域','北二區域','桃竹區域','中嘉區域','台南區域','高屏區域'];
+    assert.deepEqual(names.map(x=>x.replace(/\s|›/g,'')),original,'區域順序不符');
+    assert.equal(await page.locator('#npSections thead th').nth((await columns()).indexOf('FYC')).getAttribute('aria-sort'),'none');
     const yoy=await valuesIn('FYC累月成長率');
-    assert.ok(yoy.every(x=>!x.trim().startsWith('+')),'成長率出現 + 正號');
+    assert.ok(yoy.every(x=>!x.trim().startsWith('+')));
+    await page.screenshot({path:'ui-evidence/05-parking-org-order.png',fullPage:true});
+    await page.locator('#npSections tbody .np-number-link').first().click();
+    const index=(await columns()).indexOf('FYC');
+    assert.equal(await page.locator('#npSections thead th').nth(index).getAttribute('aria-sort'),'descending');
+    const v=(await valuesIn('FYC')).map(x=>Number(x.replaceAll(',','')));
+    assert.ok(v.length>1);
+    assert.deepEqual(v,[...v].sort((a,b)=>b-a),'據點 FYC 未依降冪排列');
+    await page.screenshot({path:'ui-evidence/06-parking-site-order.png',fullPage:true});
+    await page.locator('#npBreadcrumb button').first().click();
+    assert.equal(await page.locator('#npSections thead th').nth((await columns()).indexOf('FYC')).getAttribute('aria-sort'),'none');
   });
   await check('駐廠業務員層與其他職域同樣統計',async()=>{
     await drill(3);
     const head=await columns();
     assert.ok(head.includes('FYC')&&head.includes('駐廠職域數'));
+    assert.equal(await page.locator('#npSections thead th').nth(head.indexOf('FYC')).getAttribute('aria-sort'),'none');
     assert.ok(!head.includes('駐廠職域名稱')&&!head.includes('職域代碼'),'業務員層誤放單一職域名稱/代碼');
     await page.screenshot({path:'ui-evidence/03-parking-agent.png',fullPage:true});
   });
@@ -74,6 +84,7 @@ try{
     await page.locator('#npSections tbody .np-number-link').first().click();
     const head=await columns();
     assert.equal(head.at(-1),'職域代碼');
+    assert.equal(await page.locator('#npSections thead th').nth(head.indexOf('FYC')).getAttribute('aria-sort'),'descending');
     assert.ok(await page.locator('#npSections tbody .np-code-copy').count()>0,'職域代碼缺少複製按鈕');
     const rows=await page.locator('#npSections tbody tr').count();
     assert.ok(rows>0,'沒有據點明細');
